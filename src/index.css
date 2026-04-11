@@ -1,0 +1,279 @@
+:root {
+    --color_green:#006634;
+    --color_success:#00DC1D;
+    --color_warning:#FEB100;
+    --color_danger:#DC0000;
+    --color_sky:#6666FF;
+    --color_darkgrey:#4E5A62;
+    --color_lightgrey:#CCCCCC;
+    --color_lightgrey2:#ececec;
+    --color-green-gradient: linear-gradient(90deg, #034c36, #003332);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    text-decoration: none;
+    list-style-type: none;
+}
+
+body {
+    width: 100%;
+    height: 100dvh;
+    font-family: "Poppins", sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+a {
+    color: white;
+}
+
+img {
+    width: 100%;
+}
+
+p {
+    line-height: 1.5;
+}
+
+h1 {
+    font-size: 2.6rem;
+}
+
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.6rem;
+}
+
+h4 {
+    font-size: 1.3rem;
+}
+
+
+.btn{
+    width: 8rem;
+    padding: 16px 0;
+    text-align: center;
+    border: 1px solid var(--color_danger);
+    color: var(--color_danger);
+    position: relative;
+    transition: all 400ms ease;
+}
+
+.btn::before{
+    content: "Get Started";
+    width: 100%;
+    height: 100%;
+    background: var(--color_danger);
+    color: white;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: all 400ms ease;
+    transform-origin: 0 0;
+    transition-timing-function: cubic-bezier(0.5, 1.6, 0.4, 0.7);
+    transform: scaleX(100%);
+    line-height: 53px;
+}
+.btn:hover::before{
+    transform: scaleX(0);
+}
+
+.btn1::before{
+    content: "View More";
+}
+
+.btn2{
+    background: white;
+    color: black;
+    padding: 18px 25px;
+    border: 1px solid transparent;
+    transition: all 400ms ease;
+}
+.btn2:hover{
+    background: transparent;
+    color: white;
+    border: 1px solid white;
+}
+
+
+.nav__container {
+    background: rgba(78, 90, 98, 0.7);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    width: 100%;
+    height: 4.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 6rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+}
+
+.nav__logo {
+    width: 10rem;
+    display: flex;
+}
+
+.main-nav__links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 4.5rem;
+}
+
+.main-nav__links li {
+    position: relative;
+    height:100%;
+    display: flex;
+    align-items: center;
+}
+
+.main-nav__links > li a,
+.main-nav__links > li span{
+    color: white;
+    padding: 0.05rem 0.6rem;
+    font-size: 0.8rem;
+    background: var(--color_success);
+    border: 1px solid transparent;
+    transition: all 400ms ease;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.main-nav__links > li a:hover,
+.main-nav__links > li span:hover{
+    background: transparent;
+    color: white;
+    border: 1px solid white;
+}
+
+
+
+.active-link {
+    background: transparent !important;
+    color: white !important;
+    border: 1px solid white !important;
+}
+.sub-active-link {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border-radius: 0.5rem !important;
+}
+.small-active-link {
+    background: rgba(0,0,0,0.6) !important;
+}
+
+
+
+.body__container {
+    margin-top: 4.5rem;
+    min-height: calc(100dvh - 4.5rem);
+}
+
+.container {
+    min-height: 100dvh;
+    padding: 4rem 6rem;
+}
+
+
+.painless-logo {
+    width: 17rem;
+    transition: transform 400ms ease;
+}
+
+.painless-logo a {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.painless-logo:hover {
+    transform: translateX(5px);
+}
+
+
+
+
+
+@media screen and (max-width: 64rem) {
+    h1 {
+        font-size: 2.2rem;
+    }
+
+    h2 {
+        font-size: 1.7rem;
+    }
+
+    h3 {
+        font-size: 1.4rem;
+    }
+
+    h4 {
+        font-size: 1.2rem;
+    }
+
+
+
+    .container {
+        padding: 4rem;
+    }
+
+
+}
+
+
+
+
+
+
+@media screen and (max-width: 37.5rem) {
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    .container {
+        padding: 2rem 1rem;
+    }
+
+
+
+
+    .painless-logo {
+        width: fit-content;
+        margin-inline: auto;
+    }
+
+    .painless-logo a {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .painless-logo img {
+        width: 12rem;
+    }
+}

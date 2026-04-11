@@ -1,0 +1,30 @@
+.development__container {
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: rgb(145, 145, 145);
+}
+
+.book-open-icon {
+    color: rgba(201, 162, 77, 0.5);
+    margin-bottom: 0.5rem;
+}
+
+.book-open-icon + p {
+    font-weight: 500;
+    
+}
+
+.development__container button {
+    margin-top: 1.5rem;
+    border: none;
+    color: rgb(73, 73, 247);
+    cursor: pointer;
+    background-color: transparent;
+}
+
+.development__container button:hover {
+    text-decoration: underline;
+}
