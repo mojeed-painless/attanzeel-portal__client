@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getCurrentUser } from '../api/auth';
+import { getCurrentUser, register } from '../api/auth';
 import { getSettings, updateSettings } from '../api/settings';
-import { getClassSubjects } from '../api/classes';
+import { getClassSubjects, getAllClasses } from '../api/classes';
 import { toSentenceCase } from '../data';
 import {
   Trophy,
@@ -10,6 +10,8 @@ import {
   TrendingUp,
   Clock4,
   ClipboardList,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 
@@ -22,7 +24,6 @@ export default function DashboardPortal() {
   });
   const [editMode, setEditMode] = useState(false);
   const [tempSettings, setTempSettings] = useState(settings);
-  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState('');
   const [studentStats, setStudentStats] = useState({
@@ -31,36 +32,115 @@ export default function DashboardPortal() {
     attendance: '0%',
     tasks: '0',
   });
+  const [classOptions, setClassOptions] = useState([]);
+  const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [studentForm, setStudentForm] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    password: '',
+    class: '',
+    department: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [studentMessage, setStudentMessage] = useState('');
+  const [studentError, setStudentError] = useState('');
+  const [studentSubmitting, setStudentSubmitting] = useState(false);
 
   const adminInfoData = [
-    { title: 'TOTAL STUDENTS', value: settings.totalStudents ?? '0', Icon: GraduationCap, color: '#3B82F6' },
-    { title: 'NUMBER OF SUBJECTS', value: '62', Icon: TrendingUp, color: '#10B981' },
-    { title: 'CURRENT TERM', value: settings.currentTerm, Icon: Clock4, color: '#F59E0B' },
-    { title: 'ACADEMIC SESSION', value: settings.currentSession, Icon: ClipboardList, color: '#F43F5E' },
+    { title: 'TOTAL STUDENTS', value: settings.totalStudents ?? '0', IconComponent: GraduationCap, color: '#3B82F6' },
+    { title: 'NUMBER OF SUBJECTS', value: '62', IconComponent: TrendingUp, color: '#10B981' },
+    { title: 'CURRENT TERM', value: settings.currentTerm, IconComponent: Clock4, color: '#F59E0B' },
+    { title: 'ACADEMIC SESSION', value: settings.currentSession, IconComponent: ClipboardList, color: '#F43F5E' },
   ];
 
-  // Fetch settings and student class subjects on component mount
+  // Fetch settings, student class subjects, and class options on component mount
   useEffect(() => {
     fetchSettings();
     fetchStudentSubjects();
+    fetchClassOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const fetchClassOptions = async () => {
+    try {
+      const response = await getAllClasses();
+      if (response.success && Array.isArray(response.classes)) {
+        const classNames = response.classes.map((cls) => cls.class).filter(Boolean);
+        setClassOptions([...new Set(classNames)]);
+        const departments = [...new Set(response.classes.map((cls) => cls.department).filter(Boolean))];
+        setDepartmentOptions(departments);
+      }
+    } catch (error) {
+      console.error('Error fetching class options:', error);
+    }
+  };
+
+  const handleStudentInputChange = (field, value) => {
+    setStudentForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddStudent = async (event) => {
+    event.preventDefault();
+    setStudentMessage('');
+    setStudentError('');
+
+    const { firstName, lastName, username, password, class: studentClass } = studentForm;
+
+    if (!firstName || !lastName || !username || !password || !studentClass) {
+      setStudentError('First name, last name, username, password, and class are required.');
+      return;
+    }
+
+    try {
+      setStudentSubmitting(true);
+      const email = username.includes('@') ? username : `${username}@attanzeel.edu.ng`;
+      const payload = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        username: username.trim().toLowerCase(),
+        password,
+        email,
+        role: 'student',
+        admissionNumber: username.trim().toUpperCase(),
+        class: studentClass,
+        department: studentForm.department || '',
+      };
+
+      const response = await register(payload);
+      if (response.success) {
+        setStudentMessage('Student added successfully.');
+        setStudentForm({ firstName: '', lastName: '', username: '', password: '', class: '', department: '' });
+      }
+    } catch (error) {
+      setStudentError(typeof error === 'string' ? error : error.response?.data?.message || 'Could not add student.');
+      console.error('Error adding student:', error);
+    } finally {
+      setStudentSubmitting(false);
+    }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
+
   const fetchStudentSubjects = async () => {
-    if (!user?.class || !user?.department) {
-      console.warn('User class or department not available:', { class: user?.class, department: user?.department });
+    if (!user?.class) {
+      console.warn('Cannot fetch student subjects because user.class is missing', user);
       return;
     }
 
     try {
       console.log('Fetching subjects for:', user.class, user.department);
       const response = await getClassSubjects(user.class, user.department);
-      
-      if (response.success) {
+      if (response.success && response.subjectCount != null) {
         console.log('Subjects fetched successfully:', response.subjectCount);
         setStudentStats((prev) => ({
           ...prev,
           subjects: response.subjectCount.toString(),
         }));
+      } else {
+        console.warn('Unexpected subjects response:', response);
       }
     } catch (error) {
       console.error('Error fetching student subjects:', error.message);
@@ -72,7 +152,6 @@ export default function DashboardPortal() {
 
   const fetchSettings = async () => {
     try {
-      setLoading(true);
       const response = await getSettings();
       if (response.success) {
         setSettings(response.settings);
@@ -81,8 +160,6 @@ export default function DashboardPortal() {
     } catch (error) {
       console.error('Error fetching settings:', error);
       setMessage('Error loading settings');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -128,7 +205,7 @@ export default function DashboardPortal() {
        <section className="user-info__header">
         <div>
           <h4 className="user-info__name">Welcome back, {user?.role === 'admin' ? toSentenceCase(user?.lastName) : toSentenceCase(user?.firstName)}!</h4>
-          <small>{settings.currentTerm}, {settings.currentSession} Academic Session - {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</small>
+          <small>{settings.currentTerm}, {settings.currentSession} Session - {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</small>
         </div>
 
         {user?.role === 'student' && (
@@ -148,15 +225,18 @@ export default function DashboardPortal() {
             { title: 'AVG. SCORE', value: studentStats.avgScore, Icon: TrendingUp, color: '#10B981' },
             { title: 'ATTENDANCE', value: studentStats.attendance, Icon: Clock4, color: '#F59E0B' },
             { title: 'TASKS', value: studentStats.tasks, Icon: ClipboardList, color: '#F43F5E' },
-          ].map(({title, value, Icon, color}) => (
-            <div key={title} className="statistics__card">
-              <span className='stats-icon' style={{background: color}}>
-                <Icon size={18}/>
-              </span>
-              <h4>{value}</h4>
-              <p>{title}</p>
-            </div>
-          ))}
+          ].map((item) => {
+            const { title, value, Icon, color } = item;
+            return (
+              <div key={title} className="statistics__card">
+                <span className='stats-icon' style={{background: color}}>
+                  <Icon size={18}/>
+                </span>
+                <h4>{value}</h4>
+                <p>{title}</p>
+              </div>
+            );
+          })}
         </div>)}
 
 
@@ -210,7 +290,7 @@ export default function DashboardPortal() {
                      fontSize: '14px'
                    }}
                  >
-                   Edit Settings
+                   Edit
                  </button>
                </div>
              ) : (
@@ -297,18 +377,159 @@ export default function DashboardPortal() {
 
 
         {user?.role === 'admin' && (
+          <>
           <div className="portal__statistics-cards">
-            {adminInfoData.map(({title, value, Icon, color}) => (
-              <div className="statistics__card">
-                <span className='stats-icon' style={{background: color}}>
-                <Icon size={18}/>
-              </span>
-              <h4>{value}</h4>
-              <p>{title}</p>
-            </div>
-          ))}
-        </div>)}
+            {adminInfoData.map((item) => {
+              const { title, value, IconComponent, color } = item;
+              return (
+                <div key={title} className="statistics__card">
+                  <span className='stats-icon' style={{background: color}}>
+                    <IconComponent size={18}/>
+                  </span>
+                  <h4>{value}</h4>
+                  <p>{title}</p>
+                </div>
+              );
+            })}
+          </div>
+
+
+
+          <div className="student___form" style={{ marginTop: '24px', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '10px', backgroundColor: '#ffffff' }}>
+            <h3 style={{ marginBottom: '16px' }}>Add New Student</h3>
+            {studentMessage && (
+              <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '8px' }}>
+                {studentMessage}
+              </div>
+            )}
+            {studentError && (
+              <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '8px' }}>
+                {studentError}
+              </div>
+            )}
+            <form onSubmit={handleAddStudent} style={{ display: 'grid', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px' }}>
+                  First Name *
+                  <input
+                    type="text"
+                    value={studentForm.firstName}
+                    onChange={(e) => handleStudentInputChange('firstName', e.target.value)}
+                    required
+                    style={{ padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                  />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px' }}>
+                  Last Name *
+                  <input
+                    type="text"
+                    value={studentForm.lastName}
+                    onChange={(e) => handleStudentInputChange('lastName', e.target.value)}
+                    required
+                    style={{ padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                  />
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px' }}>
+                  Username *
+                  <input
+                    type="text"
+                    value={studentForm.username}
+                    onChange={(e) => handleStudentInputChange('username', e.target.value)}
+                    required
+                    style={{ padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                  />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px' }}>
+                  Password *
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={studentForm.password}
+                      onChange={(e) => handleStudentInputChange('password', e.target.value)}
+                      required
+                      style={{ width: '100%', padding: '10px 42px 10px 10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#6b7280',
+                        padding: 0,
+                      }}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px' }}>
+                  Class *
+                  <select
+                    value={studentForm.class}
+                    onChange={(e) => handleStudentInputChange('class', e.target.value)}
+                    required
+                    style={{ padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                  >
+                    <option value="">Select class</option>
+                    {classOptions.map((classOption) => (
+                      <option key={classOption} value={classOption}>{classOption}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px' }}>
+                  Department
+                  <select
+                    value={studentForm.department}
+                    onChange={(e) => handleStudentInputChange('department', e.target.value)}
+                    style={{ padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                  >
+                    <option value="">Select department (optional)</option>
+                    {departmentOptions.map((departmentOption) => (
+                      <option key={departmentOption} value={departmentOption}>{departmentOption}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={studentSubmitting}
+                style={{
+                  padding: '12px 18px',
+                  backgroundColor: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: studentSubmitting ? 'not-allowed' : 'pointer',
+                  width: 'fit-content',
+                  fontWeight: 600,
+                }}
+              >
+                {studentSubmitting ? 'Adding student...' : 'Add Student'}
+              </button>
+            </form>
+          </div>
+          </>
+          
+      
+      )}
+
+
        </section>
+
     </>
   );
 }

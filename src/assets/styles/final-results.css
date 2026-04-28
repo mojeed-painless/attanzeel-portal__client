@@ -1,0 +1,303 @@
+.final-result__container {
+    border: 4px solid var(--color_green);
+    padding: 0.6rem;
+    /* min-height: 70.17rem; */
+    display: flex;
+    flex-direction: column;
+    margin-top: 2rem;
+}
+
+.final-result__header {
+    border-bottom: 1px solid grey;
+}
+
+.final-result__header h4 {
+    background: var(--color_green);
+    padding: 0.05rem 1rem;
+    width: fit-content;
+    margin-inline: auto;
+    color: white;
+    margin-top: 1rem;
+    text-transform: uppercase;
+    word-spacing: 0.1rem;
+    letter-spacing: 0.3rem;
+}
+
+.final-result__header p {
+    width: fit-content;
+    margin: 0.4rem auto;
+}
+
+.final-result__student-info {
+    margin: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.final-result__student-info div {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.final-result__student-info span {
+    color: gray;
+}
+
+.final-result__body table,
+.final-result__body th,
+.final-result__body td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+.final-result__body table {
+    width: 100%;
+    text-align: center;
+}
+
+.final-result__body th {
+    background: var(--color_green);
+    color: white;
+    padding: 0.4rem 0;
+}
+
+.final-result__body th:not(:last-child) {
+    border-right:1px solid white ;
+}
+
+.final-result__body td {
+    padding: 0.4rem 0;
+}
+
+.final-result__body tbody td:first-child{
+    text-align: left;
+    padding-left: 1rem;
+}
+
+.final-result__conclusion {
+    margin-top: 0.8rem;
+    /* margin-top: auto; */
+}
+
+.final-result__percentage {
+    border: 1px solid grey;
+    display: flex;
+    justify-content: space-between;
+}
+
+.final-result__percentage div:not(:last-child) {
+    border-right: 1px solid grey;
+}
+
+.final-result__percentage div {
+    width: 100%;
+    padding-left: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.final-result__percentage span {
+    color: gray;
+}
+
+.final-result__base {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.final-result__comments {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.final-result__comments div {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid gray;
+}
+
+.final-result__comments div span:first-child{
+    color: gray;
+}
+
+.final-grading-system {
+    text-align: center;
+}
+
+.final-grading-system__head {
+    background: var(--color_green);
+    color: white;
+    padding: 0.1rem 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.final-grading-system table,
+.final-grading-system th,
+.final-grading-system td {
+    border: 1px solid gray;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.final-grading-system th,
+.final-grading-system td {
+    padding: 0.2rem 1rem;
+}
+
+.final-result__motto {
+    width: fit-content;
+    margin-inline: auto;
+    word-spacing: 0.4rem;
+    letter-spacing: 0.4rem;
+    color: var(--color_success);
+    margin-top: 0.7rem;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.final-download-btn {
+    width: fit-content; 
+    padding: 0.75rem; 
+    margin: 2rem auto 0;
+    background-color: var(--color_success); 
+    color: #fff; 
+    font-size: 0.9rem; 
+    font-weight: 600; 
+    border: none; 
+    border-radius: 0.375rem; 
+    display: flex;
+    gap: 0.8rem;
+    cursor: pointer; 
+    transition: all 400ms ease;
+}
+
+.final-download-btn:hover {
+    background: #068146;
+}
+
+
+
+
+
+
+
+
+
+
+/* .result__container{border: 4px solid var(--color_green);padding: 0.6rem;min-height: 70.17rem;display: flex;flex-direction: column;}
+.result__header{border-bottom: 1px solid grey;}
+.result__header h4{background: var(--color_green);padding: 0.05rem 1rem;width: fit-content;margin-inline: auto;color: white;margin-top: 1rem;text-transform: uppercase;word-spacing: 0.1rem;letter-spacing: 0.3rem;}
+.result__header p{width: fit-content;margin: 0.4rem auto;}
+.result__student-info{margin: 0.5rem 0;display: flex;justify-content: space-between;}
+.result__student-info div{font-size: 1.2rem;font-weight: 700;}
+.result__student-info span{color: gray;}
+.result__body table,.result__body th,.result__body td{border: 1px solid black;border-collapse: collapse;}
+.result__body table{width: 100%;text-align: center;}
+.result__body th{background: var(--color_green);color: white;padding: 0.4rem 0;}
+.result__body th:not(:last-child){border-right:1px solid white ;}
+.result__body td{padding: 0.4rem 0;}
+.result__body tbody td:first-child{text-align: left;padding-left: 1rem;}
+.result__conclusion{margin-top: 0.8rem;margin-top: auto;}
+.result__percentage{border: 1px solid grey;display: flex;justify-content: space-between;}
+.result__percentage div:not(:last-child){border-right: 1px solid grey;}
+.result__percentage div{width: 100%;padding-left: 1rem;font-size: 1.2rem;font-weight: 700;}
+.result__percentage span{color: gray;}
+.result__base {display: flex;justify-content: space-between;margin-top: 1rem;}
+.result__comments{display: flex;flex-direction: column;gap: 1rem;}
+.result__comments div{display: flex;flex-direction: column;border-bottom: 1px solid gray;}
+.result__comments div span:first-child{color: gray;}
+.grading-system{text-align: center;}
+.grading-system__head {background: var(--color_green);color: white;padding: 0.1rem 0;font-size: 1.2rem;font-weight: 700;}
+.grading-system table,.grading-system th,.grading-system td{border: 1px solid gray;border-collapse: collapse;font-size: 0.8rem;}
+.grading-system th,.grading-system td{padding: 0.2rem 1rem;}
+.result__motto{width: fit-content;margin-inline: auto;word-spacing: 0.4rem;letter-spacing: 0.4rem;color: var(--color_success);margin-top: 0.7rem;}
+.download-btn {width: fit-content;padding: 0.75rem;margin: 2rem auto 0;background-color: var(--color_success);color: #fff;font-size: 0.9rem;font-weight: 600;border: none;border-radius: 0.375rem;display: flex;gap: 0.8rem;cursor: pointer;transition: all 400ms ease;}
+.download-btn:hover {background: #068146;} */
+
+
+
+
+
+
+
+@media screen and (max-width: 600px) {
+    .final-result__header h4 {
+       font-size: 0.7rem;
+    }
+
+    .final-result__header p {
+        font-size: 0.7rem;
+    }
+
+    .final-result__student-info div {
+        font-size: 0.7rem;
+    }
+
+    .final-result__body th {
+        font-size: 0.5rem;
+        padding: 0.4rem;
+    }
+
+    .final-result__body td {
+        font-size: 0.7rem;
+    }
+
+    .final-result__body tbody td:first-child{
+        white-space: nowrap;
+        padding-inline: 0.4rem;
+
+    }
+
+    .final-result__percentage div {
+        padding-inline: 0.4rem;
+        font-size: 0.6rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .final-result__comments {
+        font-size: 0.5rem;
+        white-space: nowrap;
+        margin-right: 0.5rem;
+    }
+
+    .final-grading-system__head {
+        font-size: 0.6rem;
+        font-weight: 500;
+    }
+
+    .final-grading-system table,
+    .final-grading-system th,
+    .final-grading-system td {
+        font-size: 0.55rem;
+    }
+
+    .final-result__motto {
+        margin-top: 1rem;
+        font-size: 0.6rem;
+        word-spacing: 0.1rem;
+        letter-spacing: 0.1rem;    
+    }
+
+
+    
+}

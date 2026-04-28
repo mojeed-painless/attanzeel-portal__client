@@ -1,13 +1,20 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+
+if (!API_BASE_URL && import.meta.env.PROD) {
+  throw new Error(
+    'Missing VITE_API_BASE_URL in production. Set the backend API URL in your deployment environment.'
+  );
+}
 
 // Create axios instance with default config
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: import.meta.env.VITE_API_TIMEOUT || 30000,
 });
 
 // Add token to requests if it exists
@@ -47,6 +54,19 @@ export const login = async (username, password) => {
     return response.data;
   } catch (error) {
     throw error.response?.data?.message || 'Login failed. Please try again.';
+  }
+};
+
+/**
+ * Register a new user without affecting the current admin session
+ * @param {Object} userData - Registration payload
+ */
+export const register = async (userData) => {
+  try {
+    const response = await apiClient.post('/auth/register', userData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Registration failed. Please try again.';
   }
 };
 

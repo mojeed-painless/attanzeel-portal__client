@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser, logout } from '../api/auth.js';
 import navLogo from '../assets/images/atlogo.png';
@@ -21,6 +21,8 @@ import ResultsPortal from '../components/ResultsPortal.jsx';
     Bell,
     ChevronDown,
     ChevronUp,
+    PanelLeftOpen,
+    PanelRightOpen,
   } from 'lucide-react';
 
 
@@ -30,6 +32,20 @@ const StudentDashboard = () => {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [activeLink, setActiveLink] = useState('Dashboard');
   const [profileDrop, setProfileDrop] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 1024);
+      if (window.innerWidth > 1024) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Helper function to convert string to sentence case
   // const toSentenceCase = (str) => {
@@ -44,14 +60,21 @@ const StudentDashboard = () => {
 
     function handleLinkClick(name) {
       setActiveLink(name);
+      setIsSidebarOpen(false);
     }
 
   return (
 
       <div className="portal__container">
-        <div className="portal__left">
-          <div className="aside__logo">
-            <img src={navLogo} alt="At-tanzeel Logo" />
+        <div className="portal__left" style={isMobile ? { left: isSidebarOpen ? '0' : '-15rem' } : {}}>
+          <div className="portal__left-header">
+            <div className="aside__logo">
+              <img src={navLogo} alt="At-tanzeel Logo" />
+            </div>
+
+            <div>
+              <PanelRightOpen className="open-btn" onClick={() => setIsSidebarOpen(false)} />
+            </div>
           </div>
 
 
@@ -60,7 +83,7 @@ const StudentDashboard = () => {
               name === 'Sign Out' ?
               <button key={name} 
               className='aside__logout-btn aside__nav-item' 
-              onClick={() => setConfirmLogout(true)} 
+              onClick={() => { setConfirmLogout(true); setIsSidebarOpen(false); }} 
               >
                 <Icon className='aside__nav-icon' />
                 <span className='aside__nav-text'>{name}</span>
@@ -104,9 +127,12 @@ const StudentDashboard = () => {
           </div>
         )}
 
-        <div className="portal__right">
+        <div className="portal__right" onClick={() => setIsSidebarOpen(false)}>
           <nav className='portal-nav__container'>
             <div className="portal-nav__left">
+              <div>
+                <PanelLeftOpen className="open-btn" onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} />
+              </div>
               <label htmlFor="search"><Search className='label-icon'/></label>
               <input type="text" name='search' placeholder='Search...'/>
             </div>
@@ -133,6 +159,7 @@ const StudentDashboard = () => {
                     {user?.class} 
                      {user?.class === 'SS 1' || user?.class === 'SS 2' || user?.class === 'SS 3' ? ' - ' : ''} 
                      {user?.class === 'SS 1' || user?.class === 'SS 2' || user?.class === 'SS 3' ? user?.department : ''}
+                    {user?.role === 'staff' ? 'Staff' : ''}
                     </small>
                 </div>
 

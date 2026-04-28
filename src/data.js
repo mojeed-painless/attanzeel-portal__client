@@ -41,6 +41,7 @@ export const toSentenceCase = (str) => {
 
 
 
+
 export const grades = [
     {
         id: 1,
@@ -68,3 +69,5 @@ export const grades = [
         remark: 'Below Average'
     }
 ]
+
+
