@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 if (!API_BASE_URL && import.meta.env.PROD) {
   throw new Error(
@@ -8,7 +8,7 @@ if (!API_BASE_URL && import.meta.env.PROD) {
   );
 }
 
-const API_URL = `${API_BASE_URL}/settings`;
+const API_URL = `${API_BASE_URL}/api/settings`;
 
 /**
  * Get current term and session settings
