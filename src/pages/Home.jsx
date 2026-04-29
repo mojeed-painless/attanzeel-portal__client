@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowRightLong } from "react-icons/fa6";
+import { FaArrowRightLong, FaEye, FaEyeSlash } from "react-icons/fa6";
 import '../assets/styles/login.css';
 import loginLogo from '../assets/images/atlogo.png';
 import { login } from '../api/auth';
@@ -8,6 +8,7 @@ import { login } from '../api/auth';
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -71,15 +72,26 @@ const Login = () => {
 
           <div>
             <label htmlFor="password">Password:</label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -102,8 +114,8 @@ const Login = () => {
         <div className="info-text">
           <h2>Welcome to At-Tanzeel Students Personalized Portal</h2>
           <p>
-            Enter student's admission number <small>[e.g ASI00209]</small> as Username and Surname (in lowercase) as Password
-            <span className='showMore'> below</span> to access the portal. 
+            Enter student's Username and Password  
+            <span className='showMore'> below</span> to access the portal. Username is the admission number <small>[e.g ASI00209]</small>
             <a href="#login-form" className='login-form showMore'>
               <span>Login here</span>
               <FaArrowRightLong />

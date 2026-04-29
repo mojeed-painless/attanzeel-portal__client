@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { getCurrentUser, register } from '../api/auth';
 import { getSettings, updateSettings } from '../api/settings';
 import { getClassSubjects, getAllClasses } from '../api/classes';
+import { getResultsByYearTermClass } from '../api/results';
+import { getStudentsByClass, getStudentsByClassAndDepartment } from '../api/students';
 import { toSentenceCase } from '../data';
 import {
   Trophy,
@@ -214,10 +216,10 @@ export default function DashboardPortal() {
             <small>Ranked #4 in {user?.class}</small>
           </div>
         )}
-       </section>
+        </section>
 
+        <section className="portal__statistics">
 
-       <section className="portal__statistics">
         {user?.role === 'student' && (
           <div className="portal__statistics-cards">
           {[

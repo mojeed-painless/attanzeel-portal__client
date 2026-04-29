@@ -4,7 +4,7 @@ import { getCurrentUser, logout } from '../api/auth.js';
 import navLogo from '../assets/images/atlogo.png';
 import { asideNavigation, toSentenceCase } from '../data.js';
 import '../assets/styles/dashboard.css';
-import profileImage from '../assets/images/mallam6.png';
+import profileImage from '../assets/images/mallam6.webp';
 import DashboardPortal from '../components/DashboardPortal.jsx';
 import ProfilePortal from '../components/ProfilePortal.jsx';
 import AcademicsPortal from '../components/AcademicsPortal.jsx';

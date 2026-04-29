@@ -291,6 +291,7 @@
 
 .portal__profile-image img {
   display: block;
+  border-radius: 50%;
 }
 
 .portal__username {
