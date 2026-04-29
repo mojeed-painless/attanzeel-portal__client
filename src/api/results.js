@@ -2,6 +2,16 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
+const buildQuery = (params) => {
+    const query = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            query.append(key, value);
+        }
+    });
+    return query.toString();
+};
+
 // Get results for a specific academic year
 export const getResultsByYear = async (academicYear) => {
     try {
@@ -33,15 +43,20 @@ export const getResultsByYearAndTerm = async (academicYear, termName) => {
 };
 
 // Get results for a specific academic year, term, and class
-export const getResultsByYearTermClass = async (academicYear, termName, className) => {
+export const getResultsByYearTermClass = async (academicYear, termName, className, department) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}`, {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}${query ? `?${query}` : ''}`;
+        const response = await axios.get(path, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         });
         return response.data;
     } catch (error) {
+        if (error.response?.status === 404) {
+            return {};
+        }
         console.error('Error fetching results:', error);
         throw error;
     }
@@ -86,9 +101,11 @@ export const updateStudentScores = async (academicYear, termName, className, stu
 };
 
 // Submit for approval
-export const submitForApproval = async (academicYear, termName, className) => {
+export const submitForApproval = async (academicYear, termName, className, department) => {
     try {
-        const response = await axios.put(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/submit-approval`, {}, {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/submit-approval${query ? `?${query}` : ''}`;
+        const response = await axios.put(path, {}, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
@@ -100,10 +117,29 @@ export const submitForApproval = async (academicYear, termName, className) => {
     }
 };
 
-// Approve results
-export const approveResults = async (academicYear, termName, className) => {
+// Update removed subjects
+export const updateRemovedSubjects = async (academicYear, termName, className, removedSubjects, department) => {
     try {
-        const response = await axios.put(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/approve`, {}, {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/removed-subjects${query ? `?${query}` : ''}`;
+        const response = await axios.put(path, { removedSubjects }, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating removed subjects:', error);
+        throw error;
+    }
+};
+
+// Approve results
+export const approveResults = async (academicYear, termName, className, department) => {
+    try {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/approve${query ? `?${query}` : ''}`;
+        const response = await axios.put(path, {}, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
@@ -116,9 +152,11 @@ export const approveResults = async (academicYear, termName, className) => {
 };
 
 // Reject results
-export const rejectResults = async (academicYear, termName, className) => {
+export const rejectResults = async (academicYear, termName, className, department) => {
     try {
-        const response = await axios.put(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/reject`, {}, {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/reject${query ? `?${query}` : ''}`;
+        const response = await axios.put(path, {}, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
@@ -131,15 +169,20 @@ export const rejectResults = async (academicYear, termName, className) => {
 };
 
 // Get approval status
-export const getApprovalStatus = async (academicYear, termName, className) => {
+export const getApprovalStatus = async (academicYear, termName, className, department) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/status`, {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/status${query ? `?${query}` : ''}`;
+        const response = await axios.get(path, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         });
         return response.data;
     } catch (error) {
+        if (error.response?.status === 404) {
+            return { approvalStatus: null };
+        }
         console.error('Error fetching approval status:', error);
         throw error;
     }

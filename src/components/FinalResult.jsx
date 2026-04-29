@@ -34,8 +34,10 @@ export default function FinalResult({
   selectedTerm,
   studentName = '',
   className = '',
+  removedSubjects = [],
 }) {
   const [subjectNames, setSubjectNames] = useState({});
+  const removedSubjectCodes = useMemo(() => Array.isArray(removedSubjects) ? removedSubjects.map((subject) => subject.code) : [], [removedSubjects]);
 
   useEffect(() => {
     if (className) {
@@ -56,7 +58,10 @@ export default function FinalResult({
   }, [className]);
 
   const studentScores = normalizeScores(studentResult.scores);
-  const subjects = useMemo(() => Object.keys(studentScores || {}), [studentScores]);
+  const subjects = useMemo(
+    () => Object.keys(studentScores || {}).filter((subject) => !removedSubjectCodes.includes(subject)),
+    [studentScores, removedSubjectCodes]
+  );
 
   const subjectRows = useMemo(() => {
     return subjects.map((subject) => {

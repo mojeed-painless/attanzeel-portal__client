@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Edit } from 'lucide-react';
 import '../assets/styles/spreadsheet.css'
 import EditableSpreadsheet from './EditableSpreadsheet';
 import { updateStudentScores, submitForApproval, getApprovalStatus } from '../api/results.js';
 
-export default function SpreadSheet({ students = [], subjects = [], initialScores = {}, academicYear, termName, className, readOnly = false }) {
+export default function SpreadSheet({ students = [], subjects = [], initialScores = {}, academicYear, termName, className, department, readOnly = false }) {
     const [editMode, setEditMode] = useState(false);
     const [scores, setScores] = useState(initialScores);
     const [displayData, setDisplayData] = useState(initialScores);
@@ -18,14 +18,14 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
     useEffect(() => {
         const fetchApprovalStatus = async () => {
             try {
-                const response = await getApprovalStatus(academicYear, termName, className);
+                const response = await getApprovalStatus(academicYear, termName, className, department);
                 setApprovalStatus(response.approvalStatus);
             } catch (error) {
                 console.error('Error fetching approval status:', error);
             }
         };
         fetchApprovalStatus();
-    }, [academicYear, termName, className]);
+    }, [academicYear, termName, className, department]);
 
     const handleEditClick = () => {
         if (approvalStatus === 'approved') return;
@@ -34,7 +34,7 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
 
     const handleApprovalClick = async () => {
         try {
-            await submitForApproval(academicYear, termName, className);
+            await submitForApproval(academicYear, termName, className, department);
             setApprovalStatus('pending');
         } catch (error) {
             console.error('Error submitting for approval:', error);
@@ -65,17 +65,17 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
 
 
 
-    const normalizedSubjects = Array.isArray(subjects) ? subjects : [];
+    const normalizedSubjects = useMemo(() => Array.isArray(subjects) ? subjects : [], [subjects]);
 
-    const getDisplayValue = (studentId, subject, type) => {
+    const getDisplayValue = useCallback((studentId, subject, type) => {
         const studentData = displayData[studentId];
         if (studentData && studentData.scores && studentData.scores[subject.code]) {
             return studentData.scores[subject.code][type] || 0;
         }
         return '0';
-    };
+    }, [displayData]);
 
-    const calculatePercentage = (studentId) => {
+    const calculatePercentage = useCallback((studentId) => {
         if (normalizedSubjects.length === 0) return 0;
         const subjectTotals = normalizedSubjects.map(subject => {
             const test = parseFloat(getDisplayValue(studentId, subject, 'test')) || 0;
@@ -84,7 +84,7 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         });
         const mo = subjectTotals.reduce((a, b) => a + b, 0);
         return mo / (normalizedSubjects.length * 100) * 100;
-    };
+    }, [getDisplayValue, normalizedSubjects]);
 
     const ranks = useMemo(() => {
         const percentages = students.map(student => ({
@@ -100,7 +100,7 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         });
         
         return rankMap;
-    }, [students, displayData, normalizedSubjects]);
+    }, [students, calculatePercentage]);
 
     return (
         <>

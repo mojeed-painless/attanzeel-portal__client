@@ -25,26 +25,28 @@ const ResultApproval = () => {
 
     const handleView = async (cls) => {
         try {
-            const subs = await getClassSubjects(cls.className);
-            setSubjects(Array.isArray(subs) ? subs : (subs?.subjects || []));
+            const subs = await getClassSubjects(cls.className, cls.department);
+            const subjectList = Array.isArray(subs) ? subs : (subs?.subjects || []);
+            const removedCodes = Array.isArray(cls.removedSubjects) ? cls.removedSubjects.map(subject => subject.code) : [];
+            setSubjects(subjectList.filter(subject => !removedCodes.includes(subject.code)));
             setSelectedResult(cls);
         } catch (error) {
             console.error('Error fetching subjects:', error);
         }
     };
 
-    const handleApprove = async (termName, className) => {
+    const handleApprove = async (termName, className, department) => {
         try {
-            await approveResults(academicYear, termName, className);
+            await approveResults(academicYear, termName, className, department);
             fetchResults();
         } catch (error) {
             console.error('Error approving results:', error);
         }
     };
 
-    const handleReject = async (termName, className) => {
+    const handleReject = async (termName, className, department) => {
         try {
-            await rejectResults(academicYear, termName, className);
+            await rejectResults(academicYear, termName, className, department);
             fetchResults();
         } catch (error) {
             console.error('Error rejecting results:', error);
@@ -84,11 +86,11 @@ const ResultApproval = () => {
                         <ul>
                             {pendingApprovals.map((cls, index) => (
                                 <li key={index} className="approval-item">
-                                    <span>{cls.termName} - {cls.className}</span>
+                                    <span>{cls.termName} - {cls.className}{cls.department ? ` (${cls.department})` : ''}</span>
                                     <div className="actions">
                                         <button onClick={() => handleView(cls)}>View</button>
-                                        <button onClick={() => handleApprove(cls.termName, cls.className)}>Approve</button>
-                                        <button onClick={() => handleReject(cls.termName, cls.className)}>Reject</button>
+                                        <button onClick={() => handleApprove(cls.termName, cls.className, cls.department)}>Approve</button>
+                                        <button onClick={() => handleReject(cls.termName, cls.className, cls.department)}>Reject</button>
                                     </div>
                                 </li>
                             ))}
@@ -104,7 +106,7 @@ const ResultApproval = () => {
                         <ul>
                             {approvedResults.map((cls, index) => (
                                 <li key={index} className="approval-item">
-                                    <span>{cls.termName} - {cls.className}</span>
+                                    <span>{cls.termName} - {cls.className}{cls.department ? ` (${cls.department})` : ''}</span>
                                     <button onClick={() => handleView(cls)}>View</button>
                                 </li>
                             ))}
@@ -134,6 +136,7 @@ const ResultApproval = () => {
                         academicYear={academicYear}
                         termName={selectedResult.termName}
                         className={selectedResult.className}
+                        department={selectedResult.department}
                         readOnly={true}
                     />
                     <button onClick={() => setSelectedResult(null)}>Close</button>

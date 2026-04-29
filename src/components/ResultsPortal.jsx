@@ -6,7 +6,7 @@ import SpreadSheet from './SpreadSheet.jsx'
 import ResultApproval from './ResultApproval.jsx'
 import { getStudentsByClass, getStudentsByClassAndDepartment } from '../api/students.js'
 import { getClassSubjects } from '../api/classes.js'
-import { getResultsByYearTermClass, updateStudentScores, getApprovalStatus } from '../api/results.js'
+import { getResultsByYearTermClass, getApprovalStatus, updateRemovedSubjects } from '../api/results.js'
 import { getSettings } from '../api/settings.js'
 import FinalResult from './FinalResult.jsx'
 
@@ -27,13 +27,17 @@ export default function ResultsPortal() {
   const [selectedTerm, setSelectedTerm] = useState('First Term');
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [removedSubjects, setRemovedSubjects] = useState([]);
+  const [subjectToRestore, setSubjectToRestore] = useState('');
   const [existingScores, setExistingScores] = useState({});
   const [loading, setLoading] = useState(false);
   const [studentResult, setStudentResult] = useState(null);
   const [studentClassResults, setStudentClassResults] = useState([]);
+  const [classRemovedSubjects, setClassRemovedSubjects] = useState([]);
   const [showStudentResult, setShowStudentResult] = useState(false);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState('');
+  const [isPersisting, setIsPersisting] = useState(false);
   const user = getCurrentUser();
 
   // Fetch settings and set default year/term for all users
@@ -69,10 +73,13 @@ export default function ResultsPortal() {
       const [studentsResponse, subjectsResponse, resultsResponse] = await Promise.all([
         getStudentsByClass(className),
         getClassSubjects(className),
-        getResultsByYearTermClass(selectedYear, selectedTerm, className).catch(() => ({ students: [] })) // Handle case where no results exist yet
+        getResultsByYearTermClass(selectedYear, selectedTerm, className).catch(() => ({ students: [], removedSubjects: [] })) // Handle case where no results exist yet
       ]);
+      const persistedRemoved = resultsResponse.removedSubjects || [];
       setStudents(studentsResponse.students || []);
-      setSubjects(subjectsResponse.subjects || []);
+      setSubjects((subjectsResponse.subjects || []).filter(subject => !persistedRemoved.some(removed => removed.code === subject.code)));
+      setRemovedSubjects(persistedRemoved);
+      setSubjectToRestore('');
       setExistingScores(resultsResponse.students ? resultsResponse.students.reduce((acc, student) => {
         const scores = student.scores && typeof student.scores.toObject === 'function'
           ? student.scores.toObject()
@@ -101,10 +108,13 @@ export default function ResultsPortal() {
       const [studentsResponse, subjectsResponse, resultsResponse] = await Promise.all([
         getStudentsByClassAndDepartment(className, department),
         getClassSubjects(className, department),
-        getResultsByYearTermClass(selectedYear, selectedTerm, className).catch(() => ({ students: [] })) // Handle case where no results exist yet
+        getResultsByYearTermClass(selectedYear, selectedTerm, className, department).catch(() => ({ students: [], removedSubjects: [] })) // Handle case where no results exist yet
       ]);
+      const persistedRemoved = resultsResponse.removedSubjects || [];
       setStudents(studentsResponse.students || []);
-      setSubjects(subjectsResponse.subjects || []);
+      setSubjects((subjectsResponse.subjects || []).filter(subject => !persistedRemoved.some(removed => removed.code === subject.code)));
+      setRemovedSubjects(persistedRemoved);
+      setSubjectToRestore('');
       setExistingScores(resultsResponse.students ? resultsResponse.students.reduce((acc, student) => {
         const scores = student.scores && typeof student.scores.toObject === 'function'
           ? student.scores.toObject()
@@ -139,11 +149,12 @@ export default function ResultsPortal() {
 
     setStudentLoading(true);
     setStudentError('');
+    setClassRemovedSubjects([]);
     setShowStudentResult(false);
 
     try {
       // First check if results are approved
-      const approvalStatus = await getApprovalStatus(selectedYear, selectedTerm, studentClass);
+      const approvalStatus = await getApprovalStatus(selectedYear, selectedTerm, studentClass, user?.department);
       if (approvalStatus.approvalStatus !== 'approved') {
         setStudentError('Results for this term are not yet approved. Please check back later.');
         setStudentResult(null);
@@ -151,7 +162,8 @@ export default function ResultsPortal() {
         return;
       }
 
-      const classData = await getResultsByYearTermClass(selectedYear, selectedTerm, studentClass);
+      const classData = await getResultsByYearTermClass(selectedYear, selectedTerm, studentClass, user?.department);
+      setClassRemovedSubjects(classData.removedSubjects || []);
       const studentId = user?.id || user?._id || user?.studentId;
       const student = (classData.students || []).find((s) => {
         const studentRef = typeof s.studentId === 'object'
@@ -184,6 +196,8 @@ export default function ResultsPortal() {
     setSelectedDepartment('');
     setStudents([]);
     setSubjects([]);
+    setRemovedSubjects([]);
+    setSubjectToRestore('');
     setExistingScores({});
 
     if (className && !className.startsWith('SS ')) {
@@ -196,14 +210,61 @@ export default function ResultsPortal() {
     setSelectedDepartment(department);
     setStudents([]);
     setSubjects([]);
+    setRemovedSubjects([]);
+    setSubjectToRestore('');
     setExistingScores({});
     if (department && selectedClass) {
       fetchStudentsByDepartment(selectedClass, department);
     } else {
       setStudents([]);
       setSubjects([]);
+      setRemovedSubjects([]);
+      setSubjectToRestore('');
       setExistingScores({});
     }
+  };
+
+  const persistRemovedSubjects = async (updatedRemovedSubjects) => {
+    if (!selectedYear || !selectedTerm || !selectedClass || isPersisting) return;
+    setIsPersisting(true);
+    try {
+      await updateRemovedSubjects(selectedYear, selectedTerm, selectedClass, updatedRemovedSubjects, selectedDepartment);
+    } catch (error) {
+      console.error('Error persisting removed subjects:', error);
+    } finally {
+      setIsPersisting(false);
+    }
+  };
+
+  const handleRemoveSubject = (subjectCode) => {
+    setSubjects(prevSubjects => {
+      const removed = prevSubjects.find(subject => subject.code === subjectCode);
+      if (removed) {
+        setRemovedSubjects(prevRemoved => {
+          const updatedRemoved = [...prevRemoved, removed];
+          persistRemovedSubjects(updatedRemoved);
+          return updatedRemoved;
+        });
+      }
+      return prevSubjects.filter(subject => subject.code !== subjectCode);
+    });
+
+    if (subjectToRestore === subjectCode) {
+      setSubjectToRestore('');
+    }
+  };
+
+  const handleRestoreSubject = () => {
+    if (!subjectToRestore) return;
+    const restored = removedSubjects.find(subject => subject.code === subjectToRestore);
+    if (!restored) return;
+    setSubjects(prevSubjects => [...prevSubjects, restored]);
+    setRemovedSubjects(prevRemoved => {
+      const updatedRemoved = prevRemoved.filter(subject => subject.code !== subjectToRestore);
+      persistRemovedSubjects(updatedRemoved);
+      return updatedRemoved;
+    });
+    setSubjectToRestore('');
   };
 
   return (
@@ -255,6 +316,7 @@ export default function ResultsPortal() {
                 selectedTerm={selectedTerm}
                 studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
                 className={user?.class || selectedClass}
+                removedSubjects={classRemovedSubjects}
               />
             )}
 
@@ -320,7 +382,52 @@ export default function ResultsPortal() {
               </div>
             )}
 
-            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} />}
+            {user?.role !== 'student' && checkResult && selectedClass && (
+              <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                  <label htmlFor="restore-subject" style={{ fontWeight: '600', marginRight: '8px' }}>Add subject back:</label>
+                  <select
+                    id="restore-subject"
+                    value={subjectToRestore}
+                    onChange={(e) => setSubjectToRestore(e.target.value)}
+                    style={{ minWidth: '220px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                  >
+                    <option value="">Select removed subject</option>
+                    {removedSubjects.map((subject, index) => (
+                      <option key={`${subject.code}-${index}`} value={subject.code}>{subject.code} - {subject.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!subjectToRestore}
+                    onClick={handleRestoreSubject}
+                    style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #3b82f6', backgroundColor: subjectToRestore ? '#3b82f6' : '#dbeafe', color: subjectToRestore ? '#fff' : '#64748b', cursor: subjectToRestore ? 'pointer' : 'not-allowed' }}
+                  >
+                    Add Subject
+                  </button>
+                </div>
+                <div style={{ marginTop: '14px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {subjects.map((subject) => (
+                    <div key={subject.code} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', backgroundColor: '#f1f5f9', borderRadius: '999px', border: '1px solid #cbd5e1' }}>
+                      <span style={{ fontWeight: '600' }}>{subject.code}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSubject(subject.code)}
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '18px', lineHeight: '1', cursor: 'pointer' }}
+                        aria-label={`Remove ${subject.name || subject.code}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {removedSubjects.length === 0 && (
+                  <p style={{ marginTop: '12px', color: '#475569' }}>All subjects are currently included in the spreadsheet.</p>
+                )}
+              </div>
+            )}
+
+            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} />}
             
 
             {showResultApproval && user?.role === 'admin' && <ResultApproval />}

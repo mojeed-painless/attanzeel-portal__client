@@ -59,7 +59,9 @@ export default function DashboardPortal() {
   // Fetch settings, student class subjects, and class options on component mount
   useEffect(() => {
     fetchSettings();
-    fetchStudentSubjects();
+    if (user?.role === 'student') {
+      fetchStudentSubjects();
+    }
     fetchClassOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -127,8 +129,8 @@ export default function DashboardPortal() {
   };
 
   const fetchStudentSubjects = async () => {
-    if (!user?.class) {
-      console.warn('Cannot fetch student subjects because user.class is missing', user);
+    if (user?.role !== 'student' || !user?.class) {
+      console.warn('Cannot fetch student subjects because user is not a student or user.class is missing', user);
       return;
     }
 
