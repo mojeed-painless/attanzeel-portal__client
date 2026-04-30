@@ -6,7 +6,7 @@ import SpreadSheet from './SpreadSheet.jsx'
 import ResultApproval from './ResultApproval.jsx'
 import { getStudentsByClass, getStudentsByClassAndDepartment } from '../api/students.js'
 import { getClassSubjects } from '../api/classes.js'
-import { getResultsByYearTermClass, getApprovalStatus, updateRemovedSubjects } from '../api/results.js'
+import { getResultsByYear, getResultsByYearTermClass, getApprovalStatus, updateRemovedSubjects } from '../api/results.js'
 import { getSettings } from '../api/settings.js'
 import FinalResult from './FinalResult.jsx'
 
@@ -33,12 +33,61 @@ export default function ResultsPortal() {
   const [loading, setLoading] = useState(false);
   const [studentResult, setStudentResult] = useState(null);
   const [studentClassResults, setStudentClassResults] = useState([]);
+  const [classWideStudents, setClassWideStudents] = useState([]);
   const [classRemovedSubjects, setClassRemovedSubjects] = useState([]);
   const [showStudentResult, setShowStudentResult] = useState(false);
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState('');
   const [isPersisting, setIsPersisting] = useState(false);
   const user = getCurrentUser();
+
+  const normalizeScores = (scores) => {
+    if (!scores) return {};
+    return typeof scores.toObject === 'function' ? scores.toObject() : scores;
+  };
+
+  const resolveStudentId = (studentId) => {
+    if (!studentId) return null;
+    return typeof studentId === 'object' ? studentId._id || studentId.toString() : studentId;
+  };
+
+  const getClassWideStudentsFromResults = (resultData, termName, className, department) => {
+    if (!resultData?.terms) return [];
+    const term = resultData.terms.find((t) => t.termName === termName);
+    if (!term) return [];
+    const seen = new Set();
+    return term.classes
+      .filter((cls) => cls.className === className && (
+        department
+          ? cls.department === department || cls.department === '' || cls.department === undefined
+          : cls.department === '' || cls.department === undefined
+      ))
+      .flatMap((cls) => (cls.students || []).map((student) => {
+        const id = resolveStudentId(student.studentId);
+        if (!id || seen.has(id)) return null;
+        seen.add(id);
+        const studentInfo = typeof student.studentId === 'object' ? student.studentId : null;
+        const name = studentInfo ? (studentInfo.name || `${studentInfo.firstName || ''} ${studentInfo.lastName || ''}`.trim()) : undefined;
+        return {
+          id,
+          name: name || student.name || 'Unknown',
+          scores: normalizeScores(student.scores),
+          comments: student.comments || ''
+        };
+      }))
+      .filter(Boolean);
+  };
+
+  const fetchAllClassWideStudents = async (className, department) => {
+    if (!className || !selectedYear || !selectedTerm) return [];
+    try {
+      const yearResults = await getResultsByYear(selectedYear);
+      return getClassWideStudentsFromResults(yearResults, selectedTerm, className, department);
+    } catch (error) {
+      console.error('Error fetching all class-wide results:', error);
+      return [];
+    }
+  };
 
   // Fetch settings and set default year/term for all users
   useEffect(() => {
@@ -125,6 +174,8 @@ export default function ResultsPortal() {
         };
         return acc;
       }, {}) : {});
+      const allWideStudents = await fetchAllClassWideStudents(className, selectedDepartment);
+      setClassWideStudents(allWideStudents);
     } catch (error) {
       console.error('Error fetching students by department:', error);
       setStudents([]);
@@ -179,8 +230,10 @@ export default function ResultsPortal() {
         return;
       }
 
+      const allWideStudents = await fetchAllClassWideStudents(studentClass, user?.department);
       setStudentResult(student);
-      setStudentClassResults(classData.students || []);
+      setStudentClassResults(allWideStudents.length ? allWideStudents : (classData.students || []));
+      setClassWideStudents(allWideStudents);
       setShowStudentResult(true);
     } catch (error) {
       console.error('Error fetching student result:', error);
@@ -199,6 +252,7 @@ export default function ResultsPortal() {
     setRemovedSubjects([]);
     setSubjectToRestore('');
     setExistingScores({});
+    setClassWideStudents([]);
 
     if (className && !className.startsWith('SS ')) {
       fetchStudents(className);
@@ -213,6 +267,7 @@ export default function ResultsPortal() {
     setRemovedSubjects([]);
     setSubjectToRestore('');
     setExistingScores({});
+    setClassWideStudents([]);
     if (department && selectedClass) {
       fetchStudentsByDepartment(selectedClass, department);
     } else {
@@ -311,12 +366,13 @@ export default function ResultsPortal() {
             {showStudentResult && studentResult && (
               <FinalResult
                 studentResult={studentResult}
-                classStudents={studentClassResults}
+                classStudents={classWideStudents.length ? classWideStudents : studentClassResults}
                 selectedYear={selectedYear}
                 selectedTerm={selectedTerm}
                 studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
                 className={user?.class || selectedClass}
                 removedSubjects={classRemovedSubjects}
+                department={user?.department}
               />
             )}
 
@@ -427,7 +483,7 @@ export default function ResultsPortal() {
               </div>
             )}
 
-            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} />}
+            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} />}
             
 
             {showResultApproval && user?.role === 'admin' && <ResultApproval />}

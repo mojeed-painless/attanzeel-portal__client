@@ -5,14 +5,6 @@ import { IoCloudDownloadOutline } from 'react-icons/io5';
 import { grades } from '../data';
 import { getClassSubjects } from '../api/classes';
 
-const getRemark = (score) => {
-  if (score >= 75) return 'Excellent';
-  if (score >= 66) return 'Very Good';
-  if (score >= 55) return 'Good';
-  if (score >= 50) return 'Average';
-  return 'B.Average';
-};
-
 const getPrincipalComment = (percentage) => {
   const percent = parseFloat(percentage);
   if (percent >= 80) return "Excellent performance. Keep inspiring!";
@@ -35,13 +27,35 @@ export default function FinalResult({
   studentName = '',
   className = '',
   removedSubjects = [],
+  department = '',
 }) {
+  const isSeniorSecondary = className && className.toUpperCase().startsWith('SS');
+
+  const getRemark = (score) => {
+    if (isSeniorSecondary) {
+      if (score >= 80) return 'A1';
+      if (score >= 70) return 'B2';
+      if (score >= 65) return 'B3';
+      if (score >= 60) return 'C4';
+      if (score >= 55) return 'C5';
+      if (score >= 50) return 'C6';
+      if (score >= 45) return 'D7';
+      if (score >= 40) return 'E8';
+      return 'F9';
+    } else {
+      if (score >= 75) return 'Excellent';
+      if (score >= 66) return 'Very Good';
+      if (score >= 55) return 'Good';
+      if (score >= 50) return 'Average';
+      return 'B.Average';
+    }
+  };
   const [subjectNames, setSubjectNames] = useState({});
   const removedSubjectCodes = useMemo(() => Array.isArray(removedSubjects) ? removedSubjects.map((subject) => subject.code) : [], [removedSubjects]);
 
   useEffect(() => {
     if (className) {
-      getClassSubjects(className)
+      getClassSubjects(className, department || undefined)
         .then((data) => {
           const namesMap = {};
           if (data.subjects && Array.isArray(data.subjects)) {
@@ -55,7 +69,7 @@ export default function FinalResult({
           console.error('Error fetching class subjects:', error);
         });
     }
-  }, [className]);
+  }, [className, department]);
 
   const studentScores = normalizeScores(studentResult.scores);
   const subjects = useMemo(
@@ -119,7 +133,7 @@ export default function FinalResult({
       <div className="final-result__container">
         <header className="final-result__header">
           <img src={cardHeader} alt="School header" />
-          <h4>{selectedTerm || 'RESULT'}</h4>
+          <h4>{selectedTerm ? `${selectedTerm} RESULT` : 'RESULT'}</h4>
           <p>{selectedYear ? `${selectedYear} ACADEMIC SESSION` : 'Academic Session'}</p>
         </header>
 
@@ -131,7 +145,8 @@ export default function FinalResult({
 
           <div>
             <div className="number"><span>TOTAL NO. CLASS:</span> {classStudents.length || 0}</div>
-            <div className="position"><span>POSITION:</span> {position}</div>
+            {/* <div className="position"><span>POSITION:</span> {position}</div> */}
+            <div className="position"><span>POSITION:</span> </div>
           </div>
         </section>
 
@@ -144,8 +159,8 @@ export default function FinalResult({
                 <th>EXAM (70%)</th>
                 <th>TOTAL (100%)</th>
                 <th>REMARK</th>
-                <th>Class Lowest</th>
-                <th>Class Highest</th>
+                {!isSeniorSecondary && <th>Class Lowest</th>}
+                {!isSeniorSecondary && <th>Class Highest</th>}
               </tr>
             </thead>
             <tbody>
@@ -157,13 +172,13 @@ export default function FinalResult({
                     <td>{row.exam}</td>
                     <td>{row.total}</td>
                     <td>{row.remark}</td>
-                    <td>{row.classLowest}</td>
-                    <td>{row.classHighest}</td>
+                    {!isSeniorSecondary && <td>{row.classLowest}</td>}
+                    {!isSeniorSecondary && <td>{row.classHighest}</td>}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7}>No subject scores available for this result.</td>
+                  <td colSpan={isSeniorSecondary ? 5 : 7}>No subject scores available for this result.</td>
                 </tr>
               )}
             </tbody>

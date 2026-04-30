@@ -4,7 +4,7 @@ import '../assets/styles/spreadsheet.css'
 import EditableSpreadsheet from './EditableSpreadsheet';
 import { updateStudentScores, submitForApproval, getApprovalStatus } from '../api/results.js';
 
-export default function SpreadSheet({ students = [], subjects = [], initialScores = {}, academicYear, termName, className, department, readOnly = false }) {
+export default function SpreadSheet({ students = [], subjects = [], initialScores = {}, academicYear, termName, className, department, readOnly = false, allStudents = [] }) {
     const [editMode, setEditMode] = useState(false);
     const [scores, setScores] = useState(initialScores);
     const [displayData, setDisplayData] = useState(initialScores);
@@ -75,6 +75,27 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         return '0';
     }, [displayData]);
 
+    const normalizeScores = useCallback((scores) => {
+        if (!scores) return {};
+        return typeof scores.toObject === 'function' ? scores.toObject() : scores;
+    }, []);
+
+    const calculatePercentageFromScores = useCallback((scores) => {
+        const normalized = normalizeScores(scores);
+        const subjectKeys = normalizedSubjects.length > 0
+            ? normalizedSubjects.map((subject) => subject.code)
+            : Object.keys(normalized);
+
+        if (subjectKeys.length === 0) return 0;
+
+        const mo = subjectKeys.reduce((total, subjectCode) => {
+            const score = normalizeScores(normalized[subjectCode] || {});
+            return total + (parseFloat(score.test) || 0) + (parseFloat(score.exam) || 0);
+        }, 0);
+
+        return mo / (subjectKeys.length * 100) * 100;
+    }, [normalizeScores, normalizedSubjects]);
+
     const calculatePercentage = useCallback((studentId) => {
         if (normalizedSubjects.length === 0) return 0;
         const subjectTotals = normalizedSubjects.map(subject => {
@@ -87,9 +108,14 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
     }, [getDisplayValue, normalizedSubjects]);
 
     const ranks = useMemo(() => {
-        const percentages = students.map(student => ({
+        const useAllStudents = Array.isArray(allStudents) && allStudents.length > 0;
+        const sourceStudents = useAllStudents ? allStudents : students;
+        const percentages = sourceStudents.map(student => ({
             id: student.id,
-            percentage: calculatePercentage(student.id)
+            name: student.name || student.fullName || student.firstName || student.lastName || 'Unknown',
+            percentage: useAllStudents
+                ? calculatePercentageFromScores(student.scores || {})
+                : calculatePercentage(student.id)
         }));
         
         percentages.sort((a, b) => b.percentage - a.percentage);
@@ -98,9 +124,14 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         percentages.forEach((item, index) => {
             rankMap[item.id] = index + 1;
         });
+
+        console.groupCollapsed('SpreadSheet ranking debug');
+        console.log('className:', className, 'department:', department, 'useAllStudents:', useAllStudents, 'sourceStudents:', sourceStudents.length);
+        console.table(percentages.map(item => ({ id: item.id, name: item.name, percentage: item.percentage, rank: rankMap[item.id] })));
+        console.groupEnd();
         
         return rankMap;
-    }, [students, calculatePercentage]);
+    }, [students, allStudents, calculatePercentage, calculatePercentageFromScores, className, department]);
 
     return (
         <>

@@ -92,6 +92,15 @@
   color: white;
 }
 
+.actions button.reverse-btn {
+  background: #f59e0b;
+  color: white;
+}
+
+.actions button.reverse-btn:hover {
+  background: #d97706;
+}
+
 .result-viewer {
   margin-top: 2rem;
   padding: 1rem;

@@ -168,6 +168,23 @@ export const rejectResults = async (academicYear, termName, className, departmen
     }
 };
 
+// Reverse approval
+export const reverseApproval = async (academicYear, termName, className, department) => {
+    try {
+        const query = buildQuery({ department });
+        const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/reverse-approval${query ? `?${query}` : ''}`;
+        const response = await axios.put(path, {}, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error reversing approval:', error);
+        throw error;
+    }
+};
+
 // Get approval status
 export const getApprovalStatus = async (academicYear, termName, className, department) => {
     try {

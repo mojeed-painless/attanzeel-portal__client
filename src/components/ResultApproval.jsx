@@ -1,14 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { getResultsByYear, approveResults, rejectResults } from '../api/results.js';
+import { getResultsByYear, approveResults, rejectResults, reverseApproval } from '../api/results.js';
 import { getClassSubjects } from '../api/classes.js';
 import SpreadSheet from './SpreadSheet.jsx';
 import '../assets/styles/result-approval.css';
+
+const normalizeScores = (scores = {}) => {
+    if (!scores) return {};
+    return typeof scores.toObject === 'function' ? scores.toObject() : scores;
+};
+
+const resolveStudentId = (studentId) => {
+    if (!studentId) return null;
+    return typeof studentId === 'object' ? studentId._id || studentId.toString() : studentId;
+};
+
+const getClassWideStudentsFromResults = (resultsData, termName, className) => {
+    if (!resultsData?.terms) return [];
+    const term = resultsData.terms.find((t) => t.termName === termName);
+    if (!term) return [];
+    const seen = new Set();
+
+    return term.classes
+        .filter((cls) => cls.className === className)
+        .flatMap((cls) => (cls.students || []).map((student) => {
+            const id = resolveStudentId(student.studentId);
+            if (!id || seen.has(id)) return null;
+            seen.add(id);
+            return {
+                id,
+                scores: normalizeScores(student.scores || {})
+            };
+        }))
+        .filter(Boolean);
+};
 
 const ResultApproval = () => {
     const [results, setResults] = useState([]);
     const [selectedResult, setSelectedResult] = useState(null);
     const [subjects, setSubjects] = useState([]);
     const [academicYear, setAcademicYear] = useState('2025-2026');
+    const [classWideStudents, setClassWideStudents] = useState([]);
 
     useEffect(() => {
         fetchResults();
@@ -30,6 +61,12 @@ const ResultApproval = () => {
             const removedCodes = Array.isArray(cls.removedSubjects) ? cls.removedSubjects.map(subject => subject.code) : [];
             setSubjects(subjectList.filter(subject => !removedCodes.includes(subject.code)));
             setSelectedResult(cls);
+            if (cls.className.startsWith('SS ')) {
+                const classWide = getClassWideStudentsFromResults(results, cls.termName, cls.className);
+                setClassWideStudents(classWide);
+            } else {
+                setClassWideStudents([]);
+            }
         } catch (error) {
             console.error('Error fetching subjects:', error);
         }
@@ -50,6 +87,15 @@ const ResultApproval = () => {
             fetchResults();
         } catch (error) {
             console.error('Error rejecting results:', error);
+        }
+    };
+
+    const handleReverseApproval = async (termName, className, department) => {
+        try {
+            await reverseApproval(academicYear, termName, className, department);
+            fetchResults();
+        } catch (error) {
+            console.error('Error reversing approval:', error);
         }
     };
 
@@ -107,7 +153,10 @@ const ResultApproval = () => {
                             {approvedResults.map((cls, index) => (
                                 <li key={index} className="approval-item">
                                     <span>{cls.termName} - {cls.className}{cls.department ? ` (${cls.department})` : ''}</span>
-                                    <button onClick={() => handleView(cls)}>View</button>
+                                    <div className="actions">
+                                        <button onClick={() => handleView(cls)}>View</button>
+                                        <button onClick={() => handleReverseApproval(cls.termName, cls.className, cls.department)} className="reverse-btn">Reverse Approval</button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -138,6 +187,7 @@ const ResultApproval = () => {
                         className={selectedResult.className}
                         department={selectedResult.department}
                         readOnly={true}
+                        allStudents={classWideStudents}
                     />
                     <button onClick={() => setSelectedResult(null)}>Close</button>
                 </div>
