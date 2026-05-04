@@ -19,8 +19,9 @@
     color: white;
     margin-top: 1rem;
     text-transform: uppercase;
-    word-spacing: 0.1rem;
-    letter-spacing: 0.3rem;
+    /* word-spacing: 0.1rem; */
+    letter-spacing: 0.2rem;
+    border-radius: 0.2rem;
 }
 
 .final-result__header p {
@@ -240,25 +241,29 @@
 
 
 @media screen and (max-width: 600px) {
+    .final-result__container {
+        padding: 0.5rem
+    }
+
     .final-result__header h4 {
-       font-size: 0.7rem;
+       font-size: 0.55rem;
     }
 
     .final-result__header p {
-        font-size: 0.7rem;
+        font-size: 0.55rem;
     }
 
     .final-result__student-info div {
-        font-size: 0.7rem;
+        font-size: 0.55rem;
     }
 
     .final-result__body th {
-        font-size: 0.5rem;
+        font-size: 0.45rem;
         padding: 0.4rem;
     }
 
     .final-result__body td {
-        font-size: 0.7rem;
+        font-size: 0.5rem;
     }
 
     .final-result__body tbody td:first-child{

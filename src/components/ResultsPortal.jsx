@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../assets/styles/dashboard.css';
+import '../assets/styles/result-portal.css';
 import { getCurrentUser } from '../api/auth.js';
 import SpreadSheet from './SpreadSheet.jsx'
 import ResultApproval from './ResultApproval.jsx'
@@ -113,6 +114,22 @@ export default function ResultsPortal() {
   const classes = ['Play Group', 'Kindergarten 1', 'Kindergarten 2', 'Nursery 1', 'Nursery 2', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3']; // Hardcoded for now
   const seniorDepartments = ['Science', 'Art', 'Commercial'];
   const isSeniorClass = selectedClass.startsWith('SS ');
+
+  const assignedClasses = React.useMemo(() => {
+    if (!user?.class) return [];
+    if (Array.isArray(user.class)) return user.class;
+    return String(user.class)
+      .split(/[,;|]+/)
+      .map((className) => className.trim())
+      .filter(Boolean);
+  }, [user?.class]);
+
+  const canEditSelectedClass = React.useMemo(() => {
+    if (user?.role === 'admin') return true;
+    if (user?.role !== 'staff') return false;
+    if (!selectedClass) return false;
+    return assignedClasses.includes(selectedClass);
+  }, [user?.role, selectedClass, assignedClasses]);
 
   const fetchStudents = async (className) => {
     if (!className) return;
@@ -427,26 +444,22 @@ export default function ResultsPortal() {
             </div>}
 
             {user?.role !== 'student' && checkResult && (
-              <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '5px' }}>
-                {selectedClass && (
-                  <p><strong>Selected Class:</strong> {selectedClass}</p>
-                )}
+              <div className="results-info">
                 {loading && <p>Loading students...</p>}
                 {selectedClass && !loading && (
-                  <p><strong>Students Found:</strong> {students.length}</p>
+                  <p><strong>{students.length}</strong> Students found in <strong>{selectedClass} {selectedDepartment}</strong></p>
                 )}
               </div>
             )}
 
-            {user?.role !== 'student' && checkResult && selectedClass && (
-              <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-                  <label htmlFor="restore-subject" style={{ fontWeight: '600', marginRight: '8px' }}>Add subject back:</label>
+            {canEditSelectedClass && checkResult && selectedClass && (
+              <div className="subjects-management">
+                <div className='subjects-management__header'>
+                  <label htmlFor="restore-subject">Add subject back:</label>
                   <select
                     id="restore-subject"
                     value={subjectToRestore}
                     onChange={(e) => setSubjectToRestore(e.target.value)}
-                    style={{ minWidth: '220px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
                   >
                     <option value="">Select removed subject</option>
                     {removedSubjects.map((subject, index) => (
@@ -457,19 +470,19 @@ export default function ResultsPortal() {
                     type="button"
                     disabled={!subjectToRestore}
                     onClick={handleRestoreSubject}
-                    style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #3b82f6', backgroundColor: subjectToRestore ? '#3b82f6' : '#dbeafe', color: subjectToRestore ? '#fff' : '#64748b', cursor: subjectToRestore ? 'pointer' : 'not-allowed' }}
+                    style={{ backgroundColor: subjectToRestore ? '#3b82f6' : '#dbeafe', color: subjectToRestore ? '#fff' : '#64748b', cursor: subjectToRestore ? 'pointer' : 'not-allowed' }}
                   >
                     Add Subject
                   </button>
                 </div>
-                <div style={{ marginTop: '14px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                
+                <div className="subjects-list">
                   {subjects.map((subject) => (
-                    <div key={subject.code} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', backgroundColor: '#f1f5f9', borderRadius: '999px', border: '1px solid #cbd5e1' }}>
-                      <span style={{ fontWeight: '600' }}>{subject.code}</span>
+                    <div key={subject.code}>
+                      <span>{subject.name}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveSubject(subject.code)}
-                        style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '18px', lineHeight: '1', cursor: 'pointer' }}
                         aria-label={`Remove ${subject.name || subject.code}`}
                       >
                         ×
@@ -477,13 +490,14 @@ export default function ResultsPortal() {
                     </div>
                   ))}
                 </div>
+
                 {removedSubjects.length === 0 && (
-                  <p style={{ marginTop: '12px', color: '#475569' }}>All subjects are currently included in the spreadsheet.</p>
+                  <p>All subjects are currently included in the spreadsheet.</p>
                 )}
               </div>
             )}
 
-            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} />}
+            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} readOnly={!canEditSelectedClass} />}
             
 
             {showResultApproval && user?.role === 'admin' && <ResultApproval />}

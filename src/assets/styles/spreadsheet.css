@@ -656,16 +656,16 @@
 
   .result__spreadsheet th:not(:first-child),
   .result__spreadsheet td:not(:first-child) {
-    width: 30px;
-    min-width: 30px;
+    width: 20px;
+    min-width: 20px;
     padding: 0.4rem 0.1rem;
     font-size: 0.65rem;
   }
 
   .result__spreadsheet th:first-child,
   .result__spreadsheet td:first-child {
-    width: 100px;
-    min-width: 100px;
+    width: 40px;
+    min-width: 40px;
     padding-left: 0.3rem;
   }
 

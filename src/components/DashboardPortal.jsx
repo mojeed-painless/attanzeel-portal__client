@@ -208,7 +208,9 @@ export default function DashboardPortal() {
     <>
        <section className="user-info__header">
         <div>
-          <h4 className="user-info__name">Welcome back, {user?.role === 'admin' ? toSentenceCase(user?.lastName) : toSentenceCase(user?.firstName)}!</h4>
+          <h4 className="user-info__name">Welcome back, {user?.role === 'admin' ? toSentenceCase(user?.lastName) : 
+             user?.role === 'staff' ? user?.title + ' ' + toSentenceCase(user?.lastName) :
+            toSentenceCase(user?.firstName)}!</h4>
           <small>{settings.currentTerm}, {settings.currentSession} Session - {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</small>
         </div>
 

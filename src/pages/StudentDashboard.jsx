@@ -156,7 +156,7 @@ const StudentDashboard = () => {
                 <div className="portal__username">
                   <h6>{toSentenceCase(user?.firstName)} {toSentenceCase(user?.lastName)}</h6>
                   <small>
-                    {user?.class} 
+                    {user?.role !== 'staff' && user?.class} 
                      {user?.class === 'SS 1' || user?.class === 'SS 2' || user?.class === 'SS 3' ? ' - ' : ''} 
                      {user?.class === 'SS 1' || user?.class === 'SS 2' || user?.class === 'SS 3' ? user?.department : ''}
                     {user?.role === 'staff' ? 'Staff' : ''}

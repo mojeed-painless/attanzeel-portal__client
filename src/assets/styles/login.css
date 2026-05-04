@@ -76,6 +76,34 @@
     outline-offset: 2px;
 }
 
+.selected-classes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.selected-class-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 4px;
+    border: 1px solid #068146;
+    background: #e7f5e8;
+    color: #064e24;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.selected-class-chip:hover {
+    background: #d1f0d5;
+}
+
+.selected-class-chip span {
+    color: #b91c1c;
+}
+
 .password-input-wrapper {
     position: relative;
     display: flex;
@@ -126,6 +154,23 @@
 
 .auth-submit-btn:hover {
     background: #068146;
+}
+
+.reg-btn {
+    margin-top: 150px;
+    background-color: Transparent;
+    color: #007bff;
+    text-decoration: underline;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+}
+
+.reg-btn:hover {
+    text-decoration: none;
+    background-color: Transparent;
 }
 
 
