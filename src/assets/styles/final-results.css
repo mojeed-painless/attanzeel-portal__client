@@ -195,6 +195,87 @@
     background: #068146;
 }
 
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1.5rem;
+}
+
+.modal-content {
+    width: min(1200px, 100%);
+    max-height: min(90vh, 1200px);
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    position: relative;
+}
+
+.modal-content .final-result__container {
+    margin-top: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.6rem;
+    height: 2.6rem;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 200ms ease;
+}
+
+.modal-close:hover {
+    background: var(--color_green);
+    color: #fff;
+}
+
+.modal-content {
+    animation: modalFade 220ms ease;
+}
+
+@keyframes modalFade {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 900px) {
+    .modal-content {
+        max-height: 95vh;
+    }
+}
+
+@media (max-width: 640px) {
+    .modal-content {
+        width: 100%;
+        border-radius: 0.75rem;
+    }
+    .final-result__student-info,
+    .final-result__base {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
 
 
 
