@@ -10,6 +10,7 @@ import { getClassSubjects } from '../api/classes.js'
 import { getResultsByYear, getResultsByYearTermClass, getApprovalStatus, updateRemovedSubjects } from '../api/results.js'
 import { getSettings } from '../api/settings.js'
 import FinalResult from './FinalResult.jsx'
+import LoadingEffect from './LoadingEffect.jsx';
 
 
   import {
@@ -40,6 +41,8 @@ export default function ResultsPortal() {
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentError, setStudentError] = useState('');
   const [isPersisting, setIsPersisting] = useState(false);
+  const [firstTermScores, setFirstTermScores] = useState({});
+  const [secondTermScores, setSecondTermScores] = useState({});
   const user = getCurrentUser();
 
   const normalizeScores = (scores) => {
@@ -136,31 +139,71 @@ export default function ResultsPortal() {
 
     setLoading(true);
     try {
-      const [studentsResponse, subjectsResponse, resultsResponse] = await Promise.all([
+      const fetchRequests = [
         getStudentsByClass(className),
         getClassSubjects(className),
-        getResultsByYearTermClass(selectedYear, selectedTerm, className).catch(() => ({ students: [], removedSubjects: [] })) // Handle case where no results exist yet
-      ]);
+        getResultsByYearTermClass(selectedYear, selectedTerm, className).catch(() => ({ students: [], removedSubjects: [] }))
+      ];
+
+      // For third term read-only, also fetch first and second term scores
+      if (selectedTerm === 'Third Term' && !canEditSelectedClass) {
+        fetchRequests.push(
+          getResultsByYearTermClass(selectedYear, 'First Term', className).catch(() => ({ students: [] })),
+          getResultsByYearTermClass(selectedYear, 'Second Term', className).catch(() => ({ students: [] }))
+        );
+      }
+
+      const [studentsResponse, subjectsResponse, resultsResponse, firstTermResponse, secondTermResponse] = await Promise.all(fetchRequests);
+      
       const persistedRemoved = resultsResponse.removedSubjects || [];
       setStudents(studentsResponse.students || []);
       setSubjects((subjectsResponse.subjects || []).filter(subject => !persistedRemoved.some(removed => removed.code === subject.code)));
       setRemovedSubjects(persistedRemoved);
       setSubjectToRestore('');
+      
       setExistingScores(resultsResponse.students ? resultsResponse.students.reduce((acc, student) => {
+        const studentId = resolveStudentId(student.studentId);
+        if (!studentId) return acc;
         const scores = student.scores && typeof student.scores.toObject === 'function'
           ? student.scores.toObject()
           : student.scores;
-        acc[student.studentId] = {
+        acc[studentId] = {
           scores: scores || {},
           comments: student.comments || ''
         };
         return acc;
       }, {}) : {});
+
+      // Set first and second term scores if fetched
+      if (selectedTerm === 'Third Term' && firstTermResponse) {
+        setFirstTermScores(firstTermResponse.students ? firstTermResponse.students.reduce((acc, student) => {
+          const studentId = resolveStudentId(student.studentId);
+          if (!studentId) return acc;
+          const scores = student.scores && typeof student.scores.toObject === 'function'
+            ? student.scores.toObject()
+            : student.scores;
+          acc[studentId] = scores || {};
+          return acc;
+        }, {}) : {});
+      }
+      if (selectedTerm === 'Third Term' && secondTermResponse) {
+        setSecondTermScores(secondTermResponse.students ? secondTermResponse.students.reduce((acc, student) => {
+          const studentId = resolveStudentId(student.studentId);
+          if (!studentId) return acc;
+          const scores = student.scores && typeof student.scores.toObject === 'function'
+            ? student.scores.toObject()
+            : student.scores;
+          acc[studentId] = scores || {};
+          return acc;
+        }, {}) : {});
+      }
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
       setSubjects([]);
       setExistingScores({});
+      setFirstTermScores({});
+      setSecondTermScores({});
     } finally {
       setLoading(false);
     }
@@ -171,33 +214,73 @@ export default function ResultsPortal() {
 
     setLoading(true);
     try {
-      const [studentsResponse, subjectsResponse, resultsResponse] = await Promise.all([
+      const fetchRequests = [
         getStudentsByClassAndDepartment(className, department),
         getClassSubjects(className, department),
-        getResultsByYearTermClass(selectedYear, selectedTerm, className, department).catch(() => ({ students: [], removedSubjects: [] })) // Handle case where no results exist yet
-      ]);
+        getResultsByYearTermClass(selectedYear, selectedTerm, className, department).catch(() => ({ students: [], removedSubjects: [] }))
+      ];
+
+      // For third term read-only, also fetch first and second term scores
+      if (selectedTerm === 'Third Term' && !canEditSelectedClass) {
+        fetchRequests.push(
+          getResultsByYearTermClass(selectedYear, 'First Term', className, department).catch(() => ({ students: [] })),
+          getResultsByYearTermClass(selectedYear, 'Second Term', className, department).catch(() => ({ students: [] }))
+        );
+      }
+
+      const [studentsResponse, subjectsResponse, resultsResponse, firstTermResponse, secondTermResponse] = await Promise.all(fetchRequests);
+      
       const persistedRemoved = resultsResponse.removedSubjects || [];
       setStudents(studentsResponse.students || []);
       setSubjects((subjectsResponse.subjects || []).filter(subject => !persistedRemoved.some(removed => removed.code === subject.code)));
       setRemovedSubjects(persistedRemoved);
       setSubjectToRestore('');
       setExistingScores(resultsResponse.students ? resultsResponse.students.reduce((acc, student) => {
+        const studentId = resolveStudentId(student.studentId);
+        if (!studentId) return acc;
         const scores = student.scores && typeof student.scores.toObject === 'function'
           ? student.scores.toObject()
           : student.scores;
-        acc[student.studentId] = {
+        acc[studentId] = {
           scores: scores || {},
           comments: student.comments || ''
         };
         return acc;
       }, {}) : {});
+      
       const allWideStudents = await fetchAllClassWideStudents(className, selectedDepartment);
       setClassWideStudents(allWideStudents);
+
+      // Set first and second term scores if fetched
+      if (selectedTerm === 'Third Term' && firstTermResponse) {
+        setFirstTermScores(firstTermResponse.students ? firstTermResponse.students.reduce((acc, student) => {
+          const studentId = resolveStudentId(student.studentId);
+          if (!studentId) return acc;
+          const scores = student.scores && typeof student.scores.toObject === 'function'
+            ? student.scores.toObject()
+            : student.scores;
+          acc[studentId] = scores || {};
+          return acc;
+        }, {}) : {});
+      }
+      if (selectedTerm === 'Third Term' && secondTermResponse) {
+        setSecondTermScores(secondTermResponse.students ? secondTermResponse.students.reduce((acc, student) => {
+          const studentId = resolveStudentId(student.studentId);
+          if (!studentId) return acc;
+          const scores = student.scores && typeof student.scores.toObject === 'function'
+            ? student.scores.toObject()
+            : student.scores;
+          acc[studentId] = scores || {};
+          return acc;
+        }, {}) : {});
+      }
     } catch (error) {
       console.error('Error fetching students by department:', error);
       setStudents([]);
       setSubjects([]);
       setExistingScores({});
+      setFirstTermScores({});
+      setSecondTermScores({});
     } finally {
       setLoading(false);
     }
@@ -269,6 +352,8 @@ export default function ResultsPortal() {
     setRemovedSubjects([]);
     setSubjectToRestore('');
     setExistingScores({});
+    setFirstTermScores({});
+    setSecondTermScores({});
     setClassWideStudents([]);
 
     if (className && !className.startsWith('SS ')) {
@@ -284,6 +369,8 @@ export default function ResultsPortal() {
     setRemovedSubjects([]);
     setSubjectToRestore('');
     setExistingScores({});
+    setFirstTermScores({});
+    setSecondTermScores({});
     setClassWideStudents([]);
     if (department && selectedClass) {
       fetchStudentsByDepartment(selectedClass, department);
@@ -372,25 +459,38 @@ export default function ResultsPortal() {
                   <option value="Third Term">Third Term</option>
                 </select>
 
-                <button type="button" onClick={fetchStudentResult} disabled={!selectedYear || !selectedTerm || !user?.class}>
+                <button type="button" onClick={fetchStudentResult} disabled={!selectedYear || !selectedTerm || !user?.class || studentLoading}>
                   View Results
                 </button>
               </div>
             )}
 
-            {studentLoading && <p>Loading results...</p>}
+            {studentLoading && <LoadingEffect message="Loading student's results" />}
             {studentError && <p style={{ color: 'red', marginTop: '0.75rem' }}>{studentError}</p>}
+
+            {/* Modal for FinalResult */}
             {showStudentResult && studentResult && (
-              <FinalResult
-                studentResult={studentResult}
-                classStudents={classWideStudents.length ? classWideStudents : studentClassResults}
-                selectedYear={selectedYear}
-                selectedTerm={selectedTerm}
-                studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
-                className={user?.class || selectedClass}
-                removedSubjects={classRemovedSubjects}
-                department={user?.department}
-              />
+              <div className="modal-overlay" onClick={() => setShowStudentResult(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="modal-close"
+                    onClick={() => setShowStudentResult(false)}
+                    aria-label="Close modal"
+                  >
+                    ×
+                  </button>
+                  <FinalResult
+                    studentResult={studentResult}
+                    classStudents={classWideStudents.length ? classWideStudents : studentClassResults}
+                    selectedYear={selectedYear}
+                    selectedTerm={selectedTerm}
+                    studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
+                    className={user?.class || selectedClass}
+                    removedSubjects={classRemovedSubjects}
+                    department={user?.department}
+                  />
+                </div>
+              </div>
             )}
 
 
@@ -430,7 +530,7 @@ export default function ResultsPortal() {
               
               <button
                 type="button"
-                disabled={!selectedClass || (isSeniorClass && !selectedDepartment)}
+                disabled={!selectedClass || (isSeniorClass && !selectedDepartment) || loading}
                 onClick={() => {
                   if (isSeniorClass) {
                     fetchStudentsByDepartment(selectedClass, selectedDepartment);
@@ -439,13 +539,13 @@ export default function ResultsPortal() {
                   }
                 }}
               >
-                Load Students
+                {loading ? 'Loading...' : 'Load Students'}
               </button>
             </div>}
 
             {user?.role !== 'student' && checkResult && (
               <div className="results-info">
-                {loading && <p>Loading students...</p>}
+              {loading && <LoadingEffect message="Loading students" />}
                 {selectedClass && !loading && (
                   <p><strong>{students.length}</strong> Students found in <strong>{selectedClass} {selectedDepartment}</strong></p>
                 )}
@@ -468,11 +568,11 @@ export default function ResultsPortal() {
                   </select>
                   <button
                     type="button"
-                    disabled={!subjectToRestore}
+                    disabled={!subjectToRestore || isPersisting}
                     onClick={handleRestoreSubject}
                     style={{ backgroundColor: subjectToRestore ? '#3b82f6' : '#dbeafe', color: subjectToRestore ? '#fff' : '#64748b', cursor: subjectToRestore ? 'pointer' : 'not-allowed' }}
                   >
-                    Add Subject
+                    {isPersisting ? 'Saving...' : 'Add Subject'}
                   </button>
                 </div>
                 
@@ -497,7 +597,7 @@ export default function ResultsPortal() {
               </div>
             )}
 
-            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} readOnly={!canEditSelectedClass} />}
+            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} readOnly={!canEditSelectedClass} firstTermScores={firstTermScores} secondTermScores={secondTermScores} />}
             
 
             {showResultApproval && user?.role === 'admin' && <ResultApproval />}

@@ -58,11 +58,29 @@ export default function DashboardPortal() {
 
   // Fetch settings, student class subjects, and class options on component mount
   useEffect(() => {
-    fetchSettings();
-    if (user?.role === 'student') {
-      fetchStudentSubjects();
-    }
-    fetchClassOptions();
+    const initializeData = async () => {
+      try {
+        // Fetch settings first
+        await fetchSettings();
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Fetch class options
+        await fetchClassOptions();
+
+        // Fetch student subjects only for students
+        if (user?.role === 'student') {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await fetchStudentSubjects();
+        }
+      } catch (error) {
+        console.error('Error initializing dashboard data:', error);
+        // Don't show error to user for initialization failures
+      }
+    };
+
+    initializeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -77,6 +95,7 @@ export default function DashboardPortal() {
       }
     } catch (error) {
       console.error('Error fetching class options:', error);
+      // Don't set error state for background data fetching
     }
   };
 
@@ -163,7 +182,7 @@ export default function DashboardPortal() {
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
-      setMessage('Error loading settings');
+      // Don't show error message for settings fetch failure
     }
   };
 

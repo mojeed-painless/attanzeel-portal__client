@@ -4,16 +4,34 @@ import '../assets/styles/spreadsheet.css'
 import EditableSpreadsheet from './EditableSpreadsheet';
 import { updateStudentScores, submitForApproval, getApprovalStatus } from '../api/results.js';
 
-export default function SpreadSheet({ students = [], subjects = [], initialScores = {}, academicYear, termName, className, department, readOnly = false, allStudents = [] }) {
+export default function SpreadSheet({ students = [], subjects = [], initialScores = {}, academicYear, termName, className, department, readOnly = false, allStudents = [], firstTermScores = {}, secondTermScores = {} }) {
     const [editMode, setEditMode] = useState(false);
     const [scores, setScores] = useState(initialScores);
     const [displayData, setDisplayData] = useState(initialScores);
     const [approvalStatus, setApprovalStatus] = useState(null);
 
+    const isThirdTerm = termName === 'Third Term';
+
+    const resolveStudentId = useCallback((studentId) => {
+        if (studentId == null) return null;
+        return typeof studentId === 'object' ? (studentId._id || studentId.toString()) : String(studentId);
+    }, []);
+
+    const normalizeDisplayData = useCallback((data) => {
+        if (!data || typeof data !== 'object') return {};
+        return Object.entries(data).reduce((acc, [studentId, studentData]) => {
+            const normalizedId = resolveStudentId(studentId);
+            if (!normalizedId) return acc;
+            acc[normalizedId] = studentData;
+            return acc;
+        }, {});
+    }, [resolveStudentId]);
+
     useEffect(() => {
-        setScores(initialScores);
-        setDisplayData(initialScores);
-    }, [initialScores]);
+        const normalized = normalizeDisplayData(initialScores);
+        setScores(normalized);
+        setDisplayData(normalized);
+    }, [initialScores, normalizeDisplayData]);
 
     useEffect(() => {
         const fetchApprovalStatus = async () => {
@@ -63,7 +81,60 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         }
     };
 
+    const normalizeScores = useCallback((scores) => {
+        if (!scores) return {};
+        return typeof scores.toObject === 'function' ? scores.toObject() : scores;
+    }, []);
 
+    // Helper to get third-term score (S column from current term)
+    const getThirdTermScore = useCallback((studentId, subject) => {
+        const studentData = displayData[studentId];
+        if (studentData && studentData.scores && studentData.scores[subject.code]) {
+            const test = parseFloat(studentData.scores[subject.code].test) || 0;
+            const exam = parseFloat(studentData.scores[subject.code].exam) || 0;
+            return test + exam;
+        }
+        return 0;
+    }, [displayData]);
+
+    // Helper to get first-term score (S)
+    const getFirstTermScore = useCallback((studentId, subject) => {
+        const scores = firstTermScores[studentId];
+        if (scores && scores[subject.code]) {
+            const score = scores[subject.code];
+            if (typeof score === 'object' && (score.test !== undefined || score.exam !== undefined)) {
+                const test = parseFloat(score.test) || 0;
+                const exam = parseFloat(score.exam) || 0;
+                return test + exam;
+            }
+            return parseFloat(score) || 0;
+        }
+        return 0;
+    }, [firstTermScores]);
+
+    // Helper to get second-term score (S)
+    const getSecondTermScore = useCallback((studentId, subject) => {
+        const scores = secondTermScores[studentId];
+        if (scores && scores[subject.code]) {
+            const score = scores[subject.code];
+            if (typeof score === 'object' && (score.test !== undefined || score.exam !== undefined)) {
+                const test = parseFloat(score.test) || 0;
+                const exam = parseFloat(score.exam) || 0;
+                return test + exam;
+            }
+            return parseFloat(score) || 0;
+        }
+        return 0;
+    }, [secondTermScores]);
+
+    // Helper to calculate average of three terms
+    const getAverageScore = useCallback((studentId, subject) => {
+        const term1 = getFirstTermScore(studentId, subject);
+        const term2 = getSecondTermScore(studentId, subject);
+        const term3 = getThirdTermScore(studentId, subject);
+        const average = (term1 + term2 + term3) / 3;
+        return Math.ceil(average);
+    }, [getFirstTermScore, getSecondTermScore, getThirdTermScore]);
 
     const normalizedSubjects = useMemo(() => Array.isArray(subjects) ? subjects : [], [subjects]);
 
@@ -74,11 +145,6 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         }
         return '0';
     }, [displayData]);
-
-    const normalizeScores = useCallback((scores) => {
-        if (!scores) return {};
-        return typeof scores.toObject === 'function' ? scores.toObject() : scores;
-    }, []);
 
     const calculatePercentageFromScores = useCallback((scores) => {
         const normalized = normalizeScores(scores);
@@ -93,7 +159,7 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
             return total + (parseFloat(score.test) || 0) + (parseFloat(score.exam) || 0);
         }, 0);
 
-        return mo / (subjectKeys.length * 100) * 100;
+        return parseFloat((mo / (subjectKeys.length * 100) * 100).toFixed(2));
     }, [normalizeScores, normalizedSubjects]);
 
     const calculatePercentage = useCallback((studentId) => {
@@ -104,8 +170,22 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
             return test + exam;
         });
         const mo = subjectTotals.reduce((a, b) => a + b, 0);
-        return mo / (normalizedSubjects.length * 100) * 100;
+        return parseFloat((mo / (normalizedSubjects.length * 100) * 100).toFixed(2));
     }, [getDisplayValue, normalizedSubjects]);
+
+    // For third term: calculate MO as sum of subject averages
+    const calculateThirdTermMO = useCallback((studentId) => {
+        if (normalizedSubjects.length === 0) return 0;
+        const subjectAverages = normalizedSubjects.map(subject => getAverageScore(studentId, subject));
+        return Math.ceil(subjectAverages.reduce((a, b) => a + b, 0));
+    }, [normalizedSubjects, getAverageScore]);
+
+    // For third term: calculate percentage based on sum of averages
+    const calculateThirdTermPercentage = useCallback((studentId) => {
+        if (normalizedSubjects.length === 0) return 0;
+        const mo = calculateThirdTermMO(studentId);
+        return parseFloat(((mo / (normalizedSubjects.length * 100)) * 100).toFixed(2));
+    }, [normalizedSubjects, calculateThirdTermMO]);
 
     const ranks = useMemo(() => {
         const useAllStudents = Array.isArray(allStudents) && allStudents.length > 0;
@@ -113,9 +193,11 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         const percentages = sourceStudents.map(student => ({
             id: student.id,
             name: student.name || student.fullName || student.firstName || student.lastName || 'Unknown',
-            percentage: useAllStudents
-                ? calculatePercentageFromScores(student.scores || {})
-                : calculatePercentage(student.id)
+            percentage: isThirdTerm
+                ? calculateThirdTermPercentage(student.id)
+                : (useAllStudents
+                    ? calculatePercentageFromScores(student.scores || {})
+                    : calculatePercentage(student.id))
         }));
         
         percentages.sort((a, b) => b.percentage - a.percentage);
@@ -131,7 +213,7 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         console.groupEnd();
         
         return rankMap;
-    }, [students, allStudents, calculatePercentage, calculatePercentageFromScores, className, department]);
+    }, [students, allStudents, calculatePercentage, calculatePercentageFromScores, calculateThirdTermPercentage, isThirdTerm, className, department]);
 
     return (
         <>
@@ -173,13 +255,26 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
                         <thead>
                             <tr>
                                 <th>Student Name</th>
-                                {normalizedSubjects.map(subject => (
-                                    <React.Fragment key={subject.code}>
-                                        <th>{subject.code} T</th>
-                                        <th>{subject.code} E</th>
-                                        <th>{subject.code} S</th>
-                                    </React.Fragment>
-                                ))}
+                                {isThirdTerm ? (
+                                    // Third term columns: 1, 2, 3, A (average)
+                                    normalizedSubjects.map(subject => (
+                                        <React.Fragment key={subject.code}>
+                                            <th>{subject.code} 1</th>
+                                            <th>{subject.code} 2</th>
+                                            <th>{subject.code} 3</th>
+                                            <th>{subject.code} A</th>
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    // Normal columns: T, E, S
+                                    normalizedSubjects.map(subject => (
+                                        <React.Fragment key={subject.code}>
+                                            <th>{subject.code} T</th>
+                                            <th>{subject.code} E</th>
+                                            <th>{subject.code} S</th>
+                                        </React.Fragment>
+                                    ))
+                                )}
                                 <th>MO</th>
                                 <th>%</th>
                                 <th>RANK</th>
@@ -189,30 +284,59 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
 
                         <tbody>
                             {students.length > 0 ? students.map((student) => {
-                                const subjectTotals = normalizedSubjects.map(subject => {
-                                    const test = parseFloat(getDisplayValue(student.id, subject, 'test')) || 0;
-                                    const exam = parseFloat(getDisplayValue(student.id, subject, 'exam')) || 0;
-                                    return test + exam;
-                                });
-                                const mo = subjectTotals.reduce((a, b) => a + b, 0);
-                                const percentage = mo > 0 ? (mo / (normalizedSubjects.length * 100) * 100).toFixed(2) : '0.00';
+                                let mo;
+                                let percentage;
+
+                                if (isThirdTerm) {
+                                    // For third term: calculate MO as sum of subject averages
+                                    mo = calculateThirdTermMO(student.id);
+                                    percentage = calculateThirdTermPercentage(student.id);
+                                } else {
+                                    // Normal calculation
+                                    const subjectTotals = normalizedSubjects.map(subject => {
+                                        const test = parseFloat(getDisplayValue(student.id, subject, 'test')) || 0;
+                                        const exam = parseFloat(getDisplayValue(student.id, subject, 'exam')) || 0;
+                                        return test + exam;
+                                    });
+                                    mo = Math.ceil(subjectTotals.reduce((a, b) => a + b, 0));
+                                    percentage = mo > 0 ? parseFloat((mo / (normalizedSubjects.length * 100) * 100).toFixed(2)) : 0;
+                                }
                                 const rank = ranks[student.id] || '-';
                                 
                                 return (
                                     <tr key={student.id}>
                                         <td><span className='student-name'>{student.name}</span></td>
-                                        {normalizedSubjects.map(subject => {
-                                            const test = getDisplayValue(student.id, subject, 'test');
-                                            const exam = getDisplayValue(student.id, subject, 'exam');
-                                            const total = (parseFloat(test) || 0) + (parseFloat(exam) || 0);
-                                            return (
-                                                <React.Fragment key={`${student.id}-${subject.code}`}>
-                                                    <td>{test}</td>
-                                                    <td>{exam}</td>
-                                                    <td className="subject-total-cell">{total}</td>
-                                                </React.Fragment>
-                                            );
-                                        })}
+                                        {isThirdTerm ? (
+                                            // Third term row: show 1, 2, 3, A columns
+                                            normalizedSubjects.map(subject => {
+                                                const term1 = getFirstTermScore(student.id, subject);
+                                                const term2 = getSecondTermScore(student.id, subject);
+                                                const term3 = getThirdTermScore(student.id, subject);
+                                                const avg = getAverageScore(student.id, subject);
+                                                return (
+                                                    <React.Fragment key={`${student.id}-${subject.code}`}>
+                                                        <td>{term1}</td>
+                                                        <td>{term2}</td>
+                                                        <td>{term3}</td>
+                                                        <td className="subject-total-cell">{avg}</td>
+                                                    </React.Fragment>
+                                                );
+                                            })
+                                        ) : (
+                                            // Normal row: show T, E, S columns
+                                            normalizedSubjects.map(subject => {
+                                                const test = getDisplayValue(student.id, subject, 'test');
+                                                const exam = getDisplayValue(student.id, subject, 'exam');
+                                                const total = Math.ceil((parseFloat(test) || 0) + (parseFloat(exam) || 0));
+                                                return (
+                                                    <React.Fragment key={`${student.id}-${subject.code}`}>
+                                                        <td>{test}</td>
+                                                        <td>{exam}</td>
+                                                        <td className="subject-total-cell">{total}</td>
+                                                    </React.Fragment>
+                                                );
+                                            })
+                                        )}
                                         <td>{mo}</td>
                                         <td>{percentage}</td>
                                         <td>{rank}</td>
@@ -221,7 +345,7 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
                                 );
                             }) : (
                                 <tr>
-                                    <td colSpan={1 + (normalizedSubjects.length * 3) + 4} style={{ textAlign: 'center', padding: '20px' }}>
+                                    <td colSpan={1 + (normalizedSubjects.length * (isThirdTerm ? 4 : 3)) + 4} style={{ textAlign: 'center', padding: '20px' }}>
                                         No students found for the selected class
                                     </td>
                                 </tr>

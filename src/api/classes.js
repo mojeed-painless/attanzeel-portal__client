@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { retryableRequest } from '../utils/apiRetry';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
@@ -21,7 +22,7 @@ export const getClassSubjects = async (className, department) => {
       ? `${API_URL}/subjects/${encodedClass}/${encodeURIComponent(department)}`
       : `${API_URL}/subjects/${encodedClass}`;
 
-    const response = await axios.get(url);
+    const response = await retryableRequest(() => axios.get(url));
     return response.data;
   } catch (error) {
     console.error('Error fetching class subjects:', error);
@@ -34,7 +35,7 @@ export const getClassSubjects = async (className, department) => {
  */
 export const getAllClasses = async () => {
   try {
-    const response = await axios.get(API_URL);
+    const response = await retryableRequest(() => axios.get(API_URL));
     return response.data.classes;
   } catch (error) {
     console.error('Error fetching classes:', error);

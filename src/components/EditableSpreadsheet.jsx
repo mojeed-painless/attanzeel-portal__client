@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Save, X } from 'lucide-react';
 import '../assets/styles/spreadsheet.css';
+import LoadingEffect from './LoadingEffect.jsx';
 
 export default function EditableSpreadsheet({ students = [], subjects = [], initialScores = {}, onSave, onSaveAndExit, onCancel }) {
     const [scores, setScores] = useState({});
     const [comments, setComments] = useState({});
     const [hasChanges, setHasChanges] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         // Convert initialScores to the format expected by the component
@@ -142,11 +144,14 @@ export default function EditableSpreadsheet({ students = [], subjects = [], init
         });
 
         try {
+            setSaving(true);
             await onSave(scores, apiScores);
             setHasChanges(false);
             setShowSuccess(true);
         } catch (error) {
             console.error('Save failed:', error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -164,11 +169,14 @@ export default function EditableSpreadsheet({ students = [], subjects = [], init
             });
 
             try {
+                setSaving(true);
                 await onSaveAndExit(scores, apiScores);
                 setHasChanges(false);
                 setShowSuccess(true);
             } catch (error) {
                 console.error('Save and exit failed:', error);
+            } finally {
+                setSaving(false);
             }
         }
 
@@ -180,12 +188,15 @@ export default function EditableSpreadsheet({ students = [], subjects = [], init
             <div className="editable-spreadsheet-container">
                 <div className="editable-spreadsheet-header">
                     <h2>Edit Student Scores</h2>
+
+                    {saving && <LoadingEffect message='Saving Scores'/>}
+                    
                     <div className="editable-spreadsheet-buttons">
-                        <button className={`save-button ${!hasChanges ? 'disabled' : ''}`} onClick={handleSave} disabled={!hasChanges}>
+                        <button className={`save-button ${!hasChanges || saving ? 'disabled' : ''}`} onClick={handleSave} disabled={!hasChanges || saving}>
                             <Save size={20} style={{ marginRight: '8px' }} />
                             Save
                         </button>
-                        <button className="exit-button" onClick={handleSaveAndExit}>
+                        <button className={`exit-button ${saving ? 'disabled' : ''}`} onClick={handleSaveAndExit} disabled={saving}>
                             <X size={20} style={{ marginRight: '8px' }} />
                             Exit
                         </button>

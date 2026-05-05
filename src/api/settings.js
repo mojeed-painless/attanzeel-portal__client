@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { retryableRequest } from '../utils/apiRetry';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
@@ -15,7 +16,7 @@ const API_URL = `${API_BASE_URL}/api/settings`;
  */
 export const getSettings = async () => {
   try {
-    const response = await axios.get(API_URL);
+    const response = await retryableRequest(() => axios.get(API_URL));
     return response.data;
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -28,15 +29,17 @@ export const getSettings = async () => {
  */
 export const updateSettings = async (currentTerm, currentSession, token) => {
   try {
-    const response = await axios.put(
-      API_URL,
-      { currentTerm, currentSession },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
+    const response = await retryableRequest(() =>
+      axios.put(
+        API_URL,
+        { currentTerm, currentSession },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
     );
     return response.data;
   } catch (error) {

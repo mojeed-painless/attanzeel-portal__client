@@ -53,7 +53,7 @@
 .result__spreadsheet table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 3000px;
+  min-width: 3900px;
   white-space: nowrap;
   font-size: 0.75rem;
   table-layout: fixed; 

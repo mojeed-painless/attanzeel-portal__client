@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { retryableRequest } from '../utils/apiRetry';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -15,13 +16,18 @@ const buildQuery = (params) => {
 // Get results for a specific academic year
 export const getResultsByYear = async (academicYear) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.get(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
+        if (error.response?.status === 404) {
+            return {};
+        }
         console.error('Error fetching results:', error);
         throw error;
     }
@@ -30,13 +36,18 @@ export const getResultsByYear = async (academicYear) => {
 // Get results for a specific academic year and term
 export const getResultsByYearAndTerm = async (academicYear, termName) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}`, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.get(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
+        if (error.response?.status === 404) {
+            return {};
+        }
         console.error('Error fetching results:', error);
         throw error;
     }
@@ -47,11 +58,13 @@ export const getResultsByYearTermClass = async (academicYear, termName, classNam
     try {
         const query = buildQuery({ department });
         const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}${query ? `?${query}` : ''}`;
-        const response = await axios.get(path, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.get(path, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         if (error.response?.status === 404) {
@@ -65,11 +78,13 @@ export const getResultsByYearTermClass = async (academicYear, termName, classNam
 // Save or update results
 export const saveResults = async (resultsData) => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/api/results`, resultsData, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.post(`${API_BASE_URL}/api/results`, resultsData, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error saving results:', error);
@@ -88,11 +103,13 @@ export const updateStudentScores = async (academicYear, termName, className, stu
             payload.comments = scores.comments;
         }
 
-        const response = await axios.put(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/${encodeURIComponent(studentId)}`, payload, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.put(`${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/${encodeURIComponent(studentId)}`, payload, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error updating scores:', error);
@@ -105,11 +122,13 @@ export const submitForApproval = async (academicYear, termName, className, depar
     try {
         const query = buildQuery({ department });
         const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/submit-approval${query ? `?${query}` : ''}`;
-        const response = await axios.put(path, {}, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.put(path, {}, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error submitting for approval:', error);
@@ -122,11 +141,13 @@ export const updateRemovedSubjects = async (academicYear, termName, className, r
     try {
         const query = buildQuery({ department });
         const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/removed-subjects${query ? `?${query}` : ''}`;
-        const response = await axios.put(path, { removedSubjects }, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.put(path, { removedSubjects }, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error updating removed subjects:', error);
@@ -139,11 +160,13 @@ export const approveResults = async (academicYear, termName, className, departme
     try {
         const query = buildQuery({ department });
         const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/approve${query ? `?${query}` : ''}`;
-        const response = await axios.put(path, {}, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.put(path, {}, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error approving results:', error);
@@ -156,11 +179,13 @@ export const rejectResults = async (academicYear, termName, className, departmen
     try {
         const query = buildQuery({ department });
         const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/reject${query ? `?${query}` : ''}`;
-        const response = await axios.put(path, {}, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.put(path, {}, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error rejecting results:', error);
@@ -173,11 +198,13 @@ export const reverseApproval = async (academicYear, termName, className, departm
     try {
         const query = buildQuery({ department });
         const path = `${API_BASE_URL}/api/results/${encodeURIComponent(academicYear)}/${encodeURIComponent(termName)}/${encodeURIComponent(className)}/reverse-approval${query ? `?${query}` : ''}`;
-        const response = await axios.put(path, {}, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await retryableRequest(() =>
+            axios.put(path, {}, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+        );
         return response.data;
     } catch (error) {
         console.error('Error reversing approval:', error);
