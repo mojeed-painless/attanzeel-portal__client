@@ -19,7 +19,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 10;
+  z-index: 20;
   transition: left 400ms ease;
 }
 
@@ -172,6 +172,7 @@
   height: 4rem;
   position: fixed;
   top: 0;
+  z-index: 15;
   left: 0rem;
   width: 100%;
 }
