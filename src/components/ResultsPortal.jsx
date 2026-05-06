@@ -459,7 +459,7 @@ export default function ResultsPortal() {
                   <option value="Third Term">Third Term</option>
                 </select>
 
-                <button type="button" onClick={fetchStudentResult} disabled={!selectedYear || !selectedTerm || !user?.class || studentLoading}>
+                <button className='approval__btn approval__btn-success' type="button" onClick={fetchStudentResult} disabled={!selectedYear || !selectedTerm || !user?.class || studentLoading}>
                   View Results
                 </button>
               </div>
@@ -470,10 +470,10 @@ export default function ResultsPortal() {
 
             {/* Modal for FinalResult */}
             {showStudentResult && studentResult && (
-              <div className="modal-overlay" onClick={() => setShowStudentResult(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="final-result__modal-overlay" onClick={() => setShowStudentResult(false)}>
+                <div className="final-result__modal-content" onClick={(e) => e.stopPropagation()}>
                   <button
-                    className="modal-close"
+                    className="final-result__modal-close"
                     onClick={() => setShowStudentResult(false)}
                     aria-label="Close modal"
                   >
@@ -530,6 +530,7 @@ export default function ResultsPortal() {
               
               <button
                 type="button"
+                className='approval__btn approval__btn-success'
                 disabled={!selectedClass || (isSeniorClass && !selectedDepartment) || loading}
                 onClick={() => {
                   if (isSeniorClass) {

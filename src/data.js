@@ -45,27 +45,27 @@ export const toSentenceCase = (str) => {
 export const grades = [
     {
         id: 1,
-        score: '75% - 100%',
+        score: '75 - 100',
         remark: 'Excellent'
     },
     {
         id: 2,
-        score: '66% - 74%',
+        score: '66 - 74',
         remark: 'Very Good'
     },
     {
         id: 3,
-        score: '55% - 64%',
+        score: '55 - 64',
         remark: 'Good'
     },
     {
         id: 4,
-        score: '50% - 54%',
+        score: '50 - 54',
         remark: 'Average'
     },
     {
         id: 5,
-        score: 'less than 50',
+        score: '< 50',
         remark: 'Below Average'
     }
 ]

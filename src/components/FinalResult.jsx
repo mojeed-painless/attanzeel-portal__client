@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import '../assets/styles/final-results.css';
 import cardHeader from '../assets/images/card-header.png';
-import { IoCloudDownloadOutline } from 'react-icons/io5';
 import { grades } from '../data';
 import { getClassSubjects } from '../api/classes';
+import {Download} from 'lucide-react';
 
 const getPrincipalComment = (percentage) => {
   const percent = parseFloat(percentage);
@@ -207,22 +207,11 @@ export default function FinalResult({
 
             <div className="final-grading-system">
               <div className='final-grading-system__head'>GRADING SYSTEM</div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Key</th>
-                    <th>Point</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <ul>
                   {grades.map((grade) => (
-                    <tr key={grade.id}>
-                      <td>{grade.score}</td>
-                      <td>{grade.remark}</td>
-                    </tr>
+                    <li><b>{grade.score}:</b> {grade.remark}</li>
                   ))}
-                </tbody>
-              </table>
+              </ul>
             </div>
           </div>
 
@@ -230,9 +219,9 @@ export default function FinalResult({
         </section>
       </div>
 
-      <button className="final-download-btn">
-        <span>Download Complete Results</span>
-        <span><IoCloudDownloadOutline /></span>
+      <button className="final-result__btn final-result__btn-success">
+        <span><Download size={16}/></span>
+        Download
       </button>
     </>
   )};
