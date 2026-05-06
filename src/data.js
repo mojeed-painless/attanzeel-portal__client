@@ -13,6 +13,9 @@
     GraduationCap, 
     TrendingUp,
     Clock4,
+      Settings, 
+      UserPlus, 
+      Users,
   } from 'lucide-react';
 
 export const toSentenceCase = (str) => {
@@ -37,7 +40,32 @@ export const toSentenceCase = (str) => {
 
 
 
-
+export const AcademicsModules = [
+  { id: 'settings', 
+    title: 'Academic Settings', 
+    desc: 'Configure current term, session, and grading parameters.', 
+    color: '#2563eb', 
+    icon: Settings 
+  },
+  { id: 'add_student', 
+    title: 'Add New Student', 
+    desc: 'Register new students and auto-generate login credentials.', 
+    color: '#10b981', 
+    icon: UserPlus 
+  },
+  { id: 'staff', 
+    title: 'Staff Management', 
+    desc: 'Manage faculty profiles, roles, and status tracking.', 
+    color: '#f59e0b', 
+    icon: Users 
+  },
+  { id: 'students', 
+    title: 'Student Management', 
+    desc: 'Directory of all students with edit, view, and delete controls.', 
+    color: '#ef4444', 
+    icon: GraduationCap 
+  }
+];
 
 
 

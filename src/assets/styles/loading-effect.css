@@ -66,3 +66,26 @@
     content: '.';
   }
 }
+
+
+
+
+
+
+
+
+
+@media screen and (max-width: 600px) {
+    .loading-overlay p {
+        font-size: 0.7rem;
+    }
+
+    .loading-animation {
+        width: 8rem;
+    }
+
+    .loading-overlay span {
+        font-size: 1.5rem;
+        min-width: 1rem;
+    }
+}

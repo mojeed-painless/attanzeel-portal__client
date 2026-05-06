@@ -36,7 +36,7 @@ export const getClassSubjects = async (className, department) => {
 export const getAllClasses = async () => {
   try {
     const response = await retryableRequest(() => axios.get(API_URL));
-    return response.data.classes;
+    return response.data;
   } catch (error) {
     console.error('Error fetching classes:', error);
     throw error;
