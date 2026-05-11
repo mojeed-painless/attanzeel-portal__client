@@ -23,6 +23,8 @@ import ResultsPortal from '../components/ResultsPortal.jsx';
     ChevronUp,
     PanelLeftOpen,
     PanelRightOpen,
+    User,
+    LogOut
   } from 'lucide-react';
 
 
@@ -34,6 +36,7 @@ const StudentDashboard = () => {
   const [profileDrop, setProfileDrop] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+
 
   useEffect(() => {
     const handleResize = () => {
@@ -85,7 +88,7 @@ const StudentDashboard = () => {
               className='aside__logout-btn aside__nav-item' 
               onClick={() => { setConfirmLogout(true); setIsSidebarOpen(false); }} 
               >
-                <Icon className='aside__nav-icon' />
+                <Icon className='aside__nav-icon' size={16} />
                 <span className='aside__nav-text'>{name}</span>
               </button> 
               
@@ -96,7 +99,7 @@ const StudentDashboard = () => {
               className={`aside__nav-item ${activeLink === name ? 'active' : ''}`} 
               onClick={() => handleLinkClick(name)} 
               >
-                <Icon className='aside__nav-icon' />
+                <Icon className='aside__nav-icon' size={16}/>
                 <span className='aside__nav-text'>{name}</span>
               </Link>
             ))}
@@ -169,6 +172,19 @@ const StudentDashboard = () => {
 
             </div>
           </nav>
+
+          <div className={`profile-nav ${profileDrop ? 'profile-fade-in' : 'profile-fade-out'}`}>
+            <ul>
+              <li onClick={() => {handleLinkClick('Profile'); setProfileDrop(false)}}>
+                <User size={16} />
+                Profile Settings
+              </li>
+              <li onClick={() => { setConfirmLogout(true); setIsSidebarOpen(false); setProfileDrop(false)}}>
+                <LogOut size={16} />
+                Sign Out
+              </li>
+            </ul>
+          </div>
 
           <main className='main__portal'>
             {activeLink === 'Dashboard' && <DashboardPortal />}

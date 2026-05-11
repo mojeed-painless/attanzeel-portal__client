@@ -1,0 +1,100 @@
+import '../assets/styles/profile-box.css';
+import profileImg from '../assets/images/mallam6.webp';
+import {profile} from '../data.js';
+import {
+  Trophy,
+  GraduationCap,
+  TrendingUp,
+  Clock4,
+  ClipboardList,
+  Eye,
+  EyeOff,
+  Search,
+  Filter,
+  Settings, 
+  UserPlus, 
+  Users,
+  User,
+  ChevronLeft,
+  BellRing,
+  SearchX,
+} from 'lucide-react';
+
+export default function ProfileBox({ userInfo, onApprove, onDisapprove, onDelete }) {
+  const isActive = userInfo?.isActive;
+
+  return (
+    <section className="profile-box__container">
+      <div className="profile-box__images">
+        <div className="profile-box__picture">
+          <img src={profileImg} alt="student's passport" />
+        </div>
+
+                <div className="edit-box-picture">
+                  <Settings size={14} />
+                </div>
+      </div>
+
+      <div className="profile-box__header-info">
+        <div className="profile-box__header-left">
+            <h5>{userInfo.firstName} {userInfo.lastName}</h5>
+            <p>
+                Admission ID:
+                <span> {userInfo.username}</span>
+            </p>
+            <small>{userInfo.class} - {userInfo.department}</small>
+        </div>
+
+        <div className="profile-box__header-right">
+            <p>
+                Registered:
+                <span> {new Date(userInfo.createdAt).toLocaleDateString()}</span>
+            </p>
+            <p>
+                Status:
+                <span> {userInfo.isActive ? 'Active' : 'Inactive'}</span>
+            </p>
+        </div>
+      </div>
+
+      <div className="profile-box__main-info">
+        {profile.map((item) => (
+            <div key={item.id} className="profile-box__guardian-details">
+                <h6>
+                    <span className="profile-box__details-icon"><User size={16}/></span>
+                    {item.header}
+                </h6>
+
+                <div className="profile-box__details">
+                    {item.details.map((index) => (
+                        <div key={index.id}>
+                            <span className="profile-box__details-icon"><User size={16}/></span>
+
+                            <div>
+                                <small>{index.title}</small>
+                                <p>{index.info}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ))}
+      </div>
+
+      <div className="profile-box__actions">
+        {!isActive ? (
+          <button type="button" className="btn-small btn-approve" onClick={() => onApprove?.(userInfo)}>
+            Approve
+          </button>
+        ) : (
+          <button type="button" className="btn-small btn-disapprove" onClick={() => onDisapprove?.(userInfo)}>
+            Deactivate
+          </button>
+        )}
+        <button type="button" className="btn-small btn-delete" onClick={() => onDelete?.(userInfo)}>
+          Delete
+        </button>
+      </div>
+    </section>
+  );
+}

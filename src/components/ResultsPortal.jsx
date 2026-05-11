@@ -11,18 +11,227 @@ import { getResultsByYear, getResultsByYearTermClass, getApprovalStatus, updateR
 import { getSettings } from '../api/settings.js'
 import FinalResult from './FinalResult.jsx'
 import LoadingEffect from './LoadingEffect.jsx';
+import EmptyState from './EmptyState.jsx';
+import {ResultsModules} from '../data.js';
+import {
+  Settings, 
+  UserPlus, 
+  Users,
+  ChevronLeft,
+} from 'lucide-react';
 
 
   import {
     FileCheck,
   } from 'lucide-react';
 
+const normalizeScores = (scores) => {
+  if (!scores) return {};
+  return typeof scores.toObject === 'function' ? scores.toObject() : scores;
+};
+
+const resolveStudentId = (studentId) => {
+  if (!studentId) return null;
+  return typeof studentId === 'object' ? studentId._id || studentId.toString() : studentId;
+};
+
+const getClassWideStudentsFromResults = (resultData, termName, className, department) => {
+  if (!resultData?.terms) return [];
+  const term = resultData.terms.find((t) => t.termName === termName);
+  if (!term) return [];
+  const seen = new Set();
+
+  return term.classes
+    .filter((cls) => cls.className === className && (
+      department
+        ? cls.department === department || cls.department === '' || cls.department === undefined
+        : cls.department === '' || cls.department === undefined
+    ))
+    .flatMap((cls) => (cls.students || []).map((student) => {
+      const id = resolveStudentId(student.studentId);
+      if (!id || seen.has(id)) return null;
+      seen.add(id);
+      const studentInfo = typeof student.studentId === 'object' ? student.studentId : null;
+      const name = studentInfo ? (studentInfo.name || `${studentInfo.firstName || ''} ${studentInfo.lastName || ''}`.trim()) : undefined;
+      return {
+        id,
+        name: name || student.name || 'Unknown',
+        scores: normalizeScores(student.scores),
+        comments: student.comments || ''
+      };
+    }))
+    .filter(Boolean);
+};
+
+function ResultChecker({
+  selectedYear,
+  selectedTerm,
+  onYearChange,
+  onTermChange,
+  onViewResults,
+  studentLoading,
+  studentError,
+}) {
+  return (
+    <>
+      <div className="form-group-inline">
+        <select value={selectedYear} onChange={(e) => onYearChange(e.target.value)}>
+          <option value="">Select Year</option>
+          <option value="2023-2024">2023/2024</option>
+          <option value="2024-2025">2024/2025</option>
+          <option value="2025-2026">2025/2026</option>
+        </select>
+
+        <select value={selectedTerm} onChange={(e) => onTermChange(e.target.value)}>
+          <option value="">Select Term</option>
+          <option value="First Term">First Term</option>
+          <option value="Second Term">Second Term</option>
+          <option value="Third Term">Third Term</option>
+        </select>
+
+        <button className='approval__btn approval__btn-success' type="button" onClick={onViewResults} disabled={!selectedYear || !selectedTerm || studentLoading}>
+          View Results
+        </button>
+      </div>
+
+      {studentLoading && <LoadingEffect message="Loading student's results" />}
+      {studentError && <EmptyState message={studentError} className='red-error'/>}
+    </>
+  );
+}
+
+function InputResult({
+  selectedYear,
+  selectedTerm,
+  selectedClass,
+  selectedDepartment,
+  classes,
+  seniorDepartments,
+  isSeniorClass,
+  subjects,
+  removedSubjects,
+  subjectToRestore,
+  isPersisting,
+  students,
+  classWideStudents,
+  existingScores,
+  firstTermScores,
+  secondTermScores,
+  canEditSelectedClass,
+  loading,
+  studentError,
+  onYearChange,
+  onTermChange,
+  onClassChange,
+  onDepartmentChange,
+  onLoadStudents,
+  onRestoreSubject,
+  onRemoveSubject,
+  onSubjectToRestoreChange,
+}) {
+  return (
+    <>
+      <div className="form-group-inline">
+        <select value={selectedYear} onChange={(e) => onYearChange(e.target.value)}>
+          <option value="">Select Year</option>
+          <option value="2023-2024">2023-2024</option>
+          <option value="2024-2025">2024-2025</option>
+          <option value="2025-2026">2025-2026</option>
+        </select>
+
+        <select value={selectedTerm} onChange={(e) => onTermChange(e.target.value)}>
+          <option value="">Select Term</option>
+          <option value="First Term">First Term</option>
+          <option value="Second Term">Second Term</option>
+          <option value="Third Term">Third Term</option>
+        </select>
+
+        <select value={selectedClass} onChange={onClassChange}>
+          <option value="">Class</option>
+          {classes.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+
+        {isSeniorClass && (
+          <select value={selectedDepartment} onChange={onDepartmentChange}>
+            <option value="">Select Department</option>
+            {seniorDepartments.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        )}
+
+        <button
+          type="button"
+          className='approval__btn approval__btn-success'
+          disabled={!selectedClass || (isSeniorClass && !selectedDepartment) || loading}
+          onClick={onLoadStudents}
+        >
+          Load Students
+        </button>
+      </div>
+
+      {loading && <LoadingEffect message="Loading student" />}
+      {studentError && <EmptyState message={studentError} className='red-error'/>}
+
+      {selectedClass && !loading && !studentError && (
+        <div className="results-info">
+          <p><strong>{students.length}</strong> Students found in <strong>{selectedClass} {selectedDepartment}</strong></p>
+        </div>
+      )}
+
+      {canEditSelectedClass && selectedClass && !loading && !studentError && (
+        <div className="subjects-management">
+          <div className='subjects-management__header'>
+            <label htmlFor="restore-subject">Add subject back:</label>
+            <select
+              id="restore-subject"
+              value={subjectToRestore}
+              onChange={(e) => onSubjectToRestoreChange(e.target.value)}
+            >
+              <option value="">Select removed subject</option>
+              {removedSubjects.map((subject, index) => (
+                <option key={`${subject.code}-${index}`} value={subject.code}>{subject.code} - {subject.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!subjectToRestore || isPersisting}
+              onClick={onRestoreSubject}
+              style={{ backgroundColor: subjectToRestore ? '#3b82f6' : '#dbeafe', color: subjectToRestore ? '#fff' : '#64748b', cursor: subjectToRestore ? 'pointer' : 'not-allowed' }}
+            >
+              {isPersisting ? 'Saving...' : 'Add Subject'}
+            </button>
+          </div>
+
+          <div className="subjects-list">
+            {subjects.map((subject) => (
+              <div key={subject.code}>
+                <span>{subject.name}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveSubject(subject.code)}
+                  aria-label={`Remove ${subject.name || subject.code}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {removedSubjects.length === 0 && (
+            <p>All subjects are currently included in the spreadsheet.</p>
+          )}
+        </div>
+      )}
+
+      {students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} readOnly={!canEditSelectedClass} firstTermScores={firstTermScores} secondTermScores={secondTermScores} />}
+    </>
+  );
+}
 
 export default function ResultsPortal() {
 
 
-  const [checkResult, setCheckResult] = useState(false);
-  const [showResultApproval, setShowResultApproval] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedYear, setSelectedYear] = useState('2023-2024');
@@ -44,44 +253,8 @@ export default function ResultsPortal() {
   const [firstTermScores, setFirstTermScores] = useState({});
   const [secondTermScores, setSecondTermScores] = useState({});
   const user = getCurrentUser();
-
-  const normalizeScores = (scores) => {
-    if (!scores) return {};
-    return typeof scores.toObject === 'function' ? scores.toObject() : scores;
-  };
-
-  const resolveStudentId = (studentId) => {
-    if (!studentId) return null;
-    return typeof studentId === 'object' ? studentId._id || studentId.toString() : studentId;
-  };
-
-  const getClassWideStudentsFromResults = (resultData, termName, className, department) => {
-    if (!resultData?.terms) return [];
-    const term = resultData.terms.find((t) => t.termName === termName);
-    if (!term) return [];
-    const seen = new Set();
-    return term.classes
-      .filter((cls) => cls.className === className && (
-        department
-          ? cls.department === department || cls.department === '' || cls.department === undefined
-          : cls.department === '' || cls.department === undefined
-      ))
-      .flatMap((cls) => (cls.students || []).map((student) => {
-        const id = resolveStudentId(student.studentId);
-        if (!id || seen.has(id)) return null;
-        seen.add(id);
-        const studentInfo = typeof student.studentId === 'object' ? student.studentId : null;
-        const name = studentInfo ? (studentInfo.name || `${studentInfo.firstName || ''} ${studentInfo.lastName || ''}`.trim()) : undefined;
-        return {
-          id,
-          name: name || student.name || 'Unknown',
-          scores: normalizeScores(student.scores),
-          comments: student.comments || ''
-        };
-      }))
-      .filter(Boolean);
-  };
-
+  const [activeModule, setActiveModule] = useState(null);
+  
   const fetchAllClassWideStudents = async (className, department) => {
     if (!className || !selectedYear || !selectedTerm) return [];
     try {
@@ -145,8 +318,8 @@ export default function ResultsPortal() {
         getResultsByYearTermClass(selectedYear, selectedTerm, className).catch(() => ({ students: [], removedSubjects: [] }))
       ];
 
-      // For third term read-only, also fetch first and second term scores
-      if (selectedTerm === 'Third Term' && !canEditSelectedClass) {
+      // For third term, always fetch first and second term scores so the 3rd-term spreadsheet can display prior-term data
+      if (selectedTerm === 'Third Term') {
         fetchRequests.push(
           getResultsByYearTermClass(selectedYear, 'First Term', className).catch(() => ({ students: [] })),
           getResultsByYearTermClass(selectedYear, 'Second Term', className).catch(() => ({ students: [] }))
@@ -204,6 +377,7 @@ export default function ResultsPortal() {
       setExistingScores({});
       setFirstTermScores({});
       setSecondTermScores({});
+      setStudentError('Unable to load students.');
     } finally {
       setLoading(false);
     }
@@ -220,8 +394,8 @@ export default function ResultsPortal() {
         getResultsByYearTermClass(selectedYear, selectedTerm, className, department).catch(() => ({ students: [], removedSubjects: [] }))
       ];
 
-      // For third term read-only, also fetch first and second term scores
-      if (selectedTerm === 'Third Term' && !canEditSelectedClass) {
+      // For third term, always fetch first and second term scores so the 3rd-term spreadsheet can display prior-term data
+      if (selectedTerm === 'Third Term') {
         fetchRequests.push(
           getResultsByYearTermClass(selectedYear, 'First Term', className, department).catch(() => ({ students: [] })),
           getResultsByYearTermClass(selectedYear, 'Second Term', className, department).catch(() => ({ students: [] }))
@@ -426,47 +600,165 @@ export default function ResultsPortal() {
     setSubjectToRestore('');
   };
 
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    setShowStudentResult(false);
+    setStudentError('');
+  };
+
+  const handleTermChange = (term) => {
+    setSelectedTerm(term);
+    setShowStudentResult(false);
+    setStudentError('');
+    setFirstTermScores({});
+    setSecondTermScores({});
+  };
+
+  const handleLoadStudents = () => {
+    if (!selectedClass) return;
+    if (isSeniorClass) {
+      fetchStudentsByDepartment(selectedClass, selectedDepartment);
+    } else {
+      fetchStudents(selectedClass);
+    }
+  };
+
+  const handleSubjectToRestoreChange = (value) => {
+    setSubjectToRestore(value);
+  };
+
+  const renderModuleContent = () => {
+    switch (activeModule) {
+      case 'check_result':
+        return (
+          <div className="module-placeholder">
+            <ResultChecker
+              selectedYear={selectedYear}
+              selectedTerm={selectedTerm}
+              onYearChange={handleYearChange}
+              onTermChange={handleTermChange}
+              onViewResults={fetchStudentResult}
+              studentLoading={studentLoading}
+              studentError={studentError}
+            />
+          </div>
+        );
+      case 'input_result':
+        return (
+          <div className="module-placeholder">
+            <InputResult
+              selectedYear={selectedYear}
+              selectedTerm={selectedTerm}
+              selectedClass={selectedClass}
+              selectedDepartment={selectedDepartment}
+              classes={classes}
+              seniorDepartments={seniorDepartments}
+              isSeniorClass={isSeniorClass}
+              subjects={subjects}
+              removedSubjects={removedSubjects}
+              subjectToRestore={subjectToRestore}
+              isPersisting={isPersisting}
+              students={students}
+              classWideStudents={classWideStudents}
+              existingScores={existingScores}
+              firstTermScores={firstTermScores}
+              secondTermScores={secondTermScores}
+              canEditSelectedClass={canEditSelectedClass}
+              loading={loading}
+              studentError={studentError}
+              onYearChange={handleYearChange}
+              onTermChange={handleTermChange}
+              onClassChange={handleClassChange}
+              onDepartmentChange={handleDepartmentChange}
+              onLoadStudents={handleLoadStudents}
+              onRestoreSubject={handleRestoreSubject}
+              onRemoveSubject={handleRemoveSubject}
+              onSubjectToRestoreChange={handleSubjectToRestoreChange}
+            />
+          </div>
+        );
+      case 'pending_result': return <div className="module-placeholder"><ResultApproval /></div>;
+      default: return null;
+    }
+  };
+
   return (
     <>
 
-            <button className="check-result" onClick={() => setCheckResult(cr => !cr)}>
-              <FileCheck size={20} style={{ verticalAlign: 'middle', marginRight: '5px' }}/>
-              {user?.role === 'student' ? 'Check Student Result' : 'Input Student Result'}
-            </button>
+            <div className={`command-center ${activeModule ? 'module-active' : ''}`}>
+              <header className="global-header">
+                <h1>RESULTS MANAGEMENT</h1>
+                {activeModule && (
+                  <button className="back-button" onClick={() => setActiveModule(null)}>
+                    <ChevronLeft size={16} /> Back
+                  </button>
+                )}
+              </header>
+      
+              <nav className="navigation-layer">
+                <div className="card-grid">
+                  {ResultsModules.map((module) => (
+                    (user?.role === 'student' && module.id === 'check_result') ? (
+                    <div 
+                      key={module.id}
+                      className={`nav-card ${activeModule === module.id ? 'is-active' : ''}`}
+                      style={{ '--accent': module.color }}
+                      onClick={() => setActiveModule(module.id)}
+                      role="button"
+                      tabIndex="0"
+                      onKeyDown={(e) => e.key === 'Enter' && setActiveModule(module.id)}
+                    >
+                      {!activeModule && 
+                        <div className="nav-card__back-icon">
+                          <module.icon size={150} strokeWidth={1} />
+                        </div>
+                      }
+                      <div className="nav-card__icon">
+                        <module.icon size={activeModule ? 20 : 32} strokeWidth={1.5} />
+                      </div>
+                      <div className="nav-card__content">
+                        <h3>{module.title}</h3>
+                        {!activeModule && <p>{module.desc}</p>}
+                      </div>
+                    </div>) : 
+                    (user?.role !== 'student' && module.id !== 'check_result') ? (
+                    <div 
+                      key={module.id}
+                      className={`nav-card ${activeModule === module.id ? 'is-active' : ''}`}
+                      style={{ '--accent': module.color }}
+                      onClick={() => setActiveModule(module.id)}
+                      role="button"
+                      tabIndex="0"
+                      onKeyDown={(e) => e.key === 'Enter' && setActiveModule(module.id)}
+                    >
+                      {!activeModule && 
+                        <div className="nav-card__back-icon">
+                          <module.icon size={150} strokeWidth={1} />
+                        </div>
+                      }
+                      <div className="nav-card__icon">
+                        <module.icon size={activeModule ? 20 : 32} strokeWidth={1.5} />
+                      </div>
+                      <div className="nav-card__content">
+                        <h3>{module.title}</h3>
+                        {!activeModule && <p>{module.desc}</p>}
+                      </div>
+                    </div>) : (
+                      ''
+                    )
 
-            {user?.role === 'admin' && 
-            
-            <button className="check-result" onClick={() => setShowResultApproval(sa => !sa)}>
-              <FileCheck size={20} style={{ verticalAlign: 'middle', marginRight: '5px' }}/>
-              View Pending Results
-            </button>
-            }
-
-
-            {checkResult && user?.role === 'student' && (
-              <div className="form-group-inline">
-                <select value={selectedYear} onChange={(e) => { setSelectedYear(e.target.value); setShowStudentResult(false); setStudentError(''); }}>
-                  <option value="">Select Year</option>
-                  <option value="2023-2024">2023/2024</option>
-                  <option value="2024-2025">2024/2025</option>
-                  <option value="2025-2026">2025/2026</option>
-                </select>
-
-                <select value={selectedTerm} onChange={(e) => { setSelectedTerm(e.target.value); setShowStudentResult(false); setStudentError(''); }}>
-                  <option value="">Select Term</option>
-                  <option value="First Term">First Term</option>
-                  <option value="Second Term">Second Term</option>
-                  <option value="Third Term">Third Term</option>
-                </select>
-
-                <button className='approval__btn approval__btn-success' type="button" onClick={fetchStudentResult} disabled={!selectedYear || !selectedTerm || !user?.class || studentLoading}>
-                  View Results
-                </button>
-              </div>
-            )}
-
-            {studentLoading && <LoadingEffect message="Loading student's results" />}
-            {studentError && <p style={{ color: 'red', marginTop: '0.75rem' }}>{studentError}</p>}
+                  ))}
+                </div>
+              </nav>
+      
+              {activeModule && (
+                <main className="module-workspace">
+                  <div className="workspace-container">
+                    {renderModuleContent()}
+                  </div>
+                </main>
+              )}
+            </div>
 
             {/* Modal for FinalResult */}
             {showStudentResult && studentResult && (
@@ -492,118 +784,6 @@ export default function ResultsPortal() {
                 </div>
               </div>
             )}
-
-
-
-
-
-
-
-            {checkResult && user?.role !== 'student' && <div className="form-group-inline">
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-                <option value="">Select Year</option>
-                <option value="2023-2024">2023-2024</option>
-                <option value="2024-2025">2024-2025</option>
-                <option value="2025-2026">2025-2026</option>
-              </select>
-
-              <select value={selectedTerm} onChange={(e) => setSelectedTerm(e.target.value)}>
-                <option value="">Select Term</option>
-                <option value="First Term">First Term</option>
-                <option value="Second Term">Second Term</option>
-                <option value="Third Term">Third Term</option>
-              </select>
-
-              <select value={selectedClass} onChange={handleClassChange}>
-                <option value="">Class</option>
-                {classes.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-
-              {isSeniorClass && (
-                <select value={selectedDepartment} onChange={handleDepartmentChange}>
-                  <option value="">Select Department</option>
-                  {seniorDepartments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-              )}
-              
-              <button
-                type="button"
-                className='approval__btn approval__btn-success'
-                disabled={!selectedClass || (isSeniorClass && !selectedDepartment) || loading}
-                onClick={() => {
-                  if (isSeniorClass) {
-                    fetchStudentsByDepartment(selectedClass, selectedDepartment);
-                  } else if (selectedClass) {
-                    fetchStudents(selectedClass);
-                  }
-                }}
-              >
-                {loading ? 'Loading...' : 'Load Students'}
-              </button>
-            </div>}
-
-            {user?.role !== 'student' && checkResult && (
-              <div className="results-info">
-              {loading && <LoadingEffect message="Loading students" />}
-                {selectedClass && !loading && (
-                  <p><strong>{students.length}</strong> Students found in <strong>{selectedClass} {selectedDepartment}</strong></p>
-                )}
-              </div>
-            )}
-
-            {canEditSelectedClass && checkResult && selectedClass && (
-              <div className="subjects-management">
-                <div className='subjects-management__header'>
-                  <label htmlFor="restore-subject">Add subject back:</label>
-                  <select
-                    id="restore-subject"
-                    value={subjectToRestore}
-                    onChange={(e) => setSubjectToRestore(e.target.value)}
-                  >
-                    <option value="">Select removed subject</option>
-                    {removedSubjects.map((subject, index) => (
-                      <option key={`${subject.code}-${index}`} value={subject.code}>{subject.code} - {subject.name}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    disabled={!subjectToRestore || isPersisting}
-                    onClick={handleRestoreSubject}
-                    style={{ backgroundColor: subjectToRestore ? '#3b82f6' : '#dbeafe', color: subjectToRestore ? '#fff' : '#64748b', cursor: subjectToRestore ? 'pointer' : 'not-allowed' }}
-                  >
-                    {isPersisting ? 'Saving...' : 'Add Subject'}
-                  </button>
-                </div>
-                
-                <div className="subjects-list">
-                  {subjects.map((subject) => (
-                    <div key={subject.code}>
-                      <span>{subject.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSubject(subject.code)}
-                        aria-label={`Remove ${subject.name || subject.code}`}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {removedSubjects.length === 0 && (
-                  <p>All subjects are currently included in the spreadsheet.</p>
-                )}
-              </div>
-            )}
-
-            {user?.role !== 'student' && students.length > 0 && <SpreadSheet students={students} subjects={subjects} initialScores={existingScores} academicYear={selectedYear} termName={selectedTerm} className={selectedClass} department={isSeniorClass ? selectedDepartment : undefined} allStudents={classWideStudents} readOnly={!canEditSelectedClass} firstTermScores={firstTermScores} secondTermScores={secondTermScores} />}
-            
-
-            {showResultApproval && user?.role === 'admin' && <ResultApproval />}
-
-
     </>
   );
 }

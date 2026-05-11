@@ -358,6 +358,7 @@
   height: 300px;
   padding: 3rem 1rem;
   color: #9ca3af;
+  text-align: center;
 }
 
 .empty-state__icon {
@@ -369,3 +370,58 @@
   font-size: 0.875rem;
   margin: 0;
 }
+
+
+
+
+
+
+
+
+@media screen and (max-width: 1024px) {
+  .approval-sections {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .approval-sections h3 {
+    text-align: center;
+    font-size: 1rem;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+@media screen and (max-width: 600px) {
+
+  .year-selector label {
+    font-size: 0.875rem;
+  }
+
+  .year-selector select {
+    width: fit-content;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .approval-sections h3 {
+    text-align: center;
+    font-size: 1rem;
+  }
+}
+
+
+
+
+
+
+
+

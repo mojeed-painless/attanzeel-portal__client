@@ -16,6 +16,11 @@
       Settings, 
       UserPlus, 
       Users,
+      BookmarkCheck,
+      ScanEye,
+      FolderInput,
+      FolderSymlink,
+      Hourglass,
   } from 'lucide-react';
 
 export const toSentenceCase = (str) => {
@@ -35,9 +40,6 @@ export const toSentenceCase = (str) => {
     { name: 'Fees', Icon: CreditCard, },
     { name: 'Sign Out', Icon: LogOut,},
   ];
-
-
-
 
 
 export const AcademicsModules = [
@@ -66,6 +68,28 @@ export const AcademicsModules = [
     icon: GraduationCap 
   }
 ];
+
+
+export const ResultsModules = [
+  { id: 'check_result', 
+    title: 'Result Checker', 
+    desc: "Click here to check and download student's Results.", 
+    color: '#2563eb', 
+    icon: ScanEye 
+  },
+  { id: 'input_result', 
+    title: 'Input Results', 
+    desc: "Input and store all available student's Results.", 
+    color: '#f59e0b', 
+    icon: FolderSymlink 
+  },
+  { id: 'pending_result', 
+    title: 'Pending Results', 
+    desc: "Review all submitted results to approve or reject.", 
+    color: '#10b981', 
+    icon: Hourglass 
+  },
+]
 
 
 
@@ -99,3 +123,50 @@ export const grades = [
 ]
 
 
+
+
+export const profile = [
+  {
+    id: 'student',
+    header: 'Personal Information',
+    details: [
+      {
+        id: 1,
+        title: 'Date of Birth',
+        info: '0 Month 0000',
+      },
+      {
+        id: 2,
+        title: 'Gender',
+        info: 'Male',
+      },
+      {
+        id: 3,
+        title: 'Home Address',
+        info: '15, Iyana Ajia Road, Ibadan.',
+      },
+    ]
+  },
+  {
+    id: 'guardian',
+    header: 'Guardian Details',
+    details: [
+      {
+        id: 1,
+        title: 'Guardian Name',
+        info: 'Mr. Abdurrazaq',
+      },
+      {
+        id: 2,
+        title: 'Contact Numbe',
+        info: '08132145677',
+      },
+      {
+        id: 3,
+        title: 'Whatsapp Number',
+        info: '09014457562',
+      },
+    ]
+  },
+
+] 

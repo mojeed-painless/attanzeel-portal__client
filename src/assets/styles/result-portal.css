@@ -89,3 +89,11 @@
     font-size: 0.9rem;
     color: #475569;
 }
+
+.red-error {
+    padding: 1rem;
+}
+
+.red-error p {
+    color: #ef4444;
+}

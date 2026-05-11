@@ -172,17 +172,16 @@ const ResultApproval = () => {
     });
 
     return (
-        <div className="result-approval">
-            <h2 className="result-approval__header">RESULT APPROVAL</h2>
+        <div>
 
-            {error && <div className="error-message">{error}</div>}
-            {loading && !selectedResult && <div className="loading">Loading approvals...</div>}
+            {error && <div className="error-alert">{error}</div>}
+            {/* {loading && !selectedResult && <div className="loading">Loading approvals...</div>} */}
             
             <div className="year-selector">
                 <label>Academic Year:</label>
                 <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}>
-                    <option value="2024-2025">2024-2025</option>
-                    <option value="2025-2026">2025-2026</option>
+                    <option value="2024-2025">2024 - 2025</option>
+                    <option value="2025-2026">2025 - 2026</option>
                 </select>
             </div>
 

@@ -1,42 +1,153 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getUserRole, register } from '../api/auth';
 import { getSettings, updateSettings } from '../api/settings';
 import { getAllClasses } from '../api/classes';
-import { getNextStudentUsername, getAllStudents, getStudentById, updateStudentApproval, deleteStudent } from '../api/students';
-import { getAllStaff, getStaffById, updateStaffApproval, deleteStaff } from '../api/staff';
-import UnderDevelopment from './UnderDevelopment.jsx';
-import '../assets/styles/academics-portal.css';
-import {AcademicsModules} from '../data.js';
 import {
-  Trophy,
-  GraduationCap,
-  TrendingUp,
-  Clock4,
-  ClipboardList,
-  Eye,
-  EyeOff,
-  Search,
-  Filter,
-  Settings, 
-  UserPlus, 
-  Users,
-  ChevronLeft,
-  BellRing
-} from 'lucide-react';
+  getNextStudentUsername,
+  getAllStudents,
+  getStudentById,
+  updateStudentApproval,
+  deleteStudent,
+} from '../api/students';
+import {
+  getAllStaff,
+  getStaffById,
+  updateStaffApproval,
+  deleteStaff,
+} from '../api/staff';
+import UnderDevelopment from './UnderDevelopment.jsx';
+import EmptyState from './EmptyState.jsx';
+import LoadingEffect from './LoadingEffect.jsx';
+import ProfileBox from './ProfileBox.jsx';
+import '../assets/styles/academics-portal.css';
+import { AcademicsModules } from '../data.js';
+import { Eye, EyeOff, Search, Filter, ChevronLeft, SearchX, X } from 'lucide-react';
 
-export default function AcademicsPortal() {
-  const [role, setRole] = useState(null);
-  const [staff, setStaff] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [selectedStaff, setSelectedStaff] = useState(null);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('view'); // 'view', 'approve', 'disapprove', 'delete'
-  const [activeModule, setActiveModule] = useState(null);
+function AcademicsSettings() {
+  const [settings, setSettings] = useState({
+    currentTerm: 'First Term',
+    currentSession: '2025/2026',
+  });
+  const [tempSettings, setTempSettings] = useState(settings);
+  const [editMode, setEditMode] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [message, setMessage] = useState('');
 
-  // Student form state
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await getSettings();
+        if (response.success) {
+          setSettings(response.settings);
+          setTempSettings(response.settings);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  const handleEditClick = () => setEditMode(true);
+  const handleCancel = () => {
+    setEditMode(false);
+    setTempSettings(settings);
+    setMessage('');
+  };
+
+  const handleSave = async () => {
+    try {
+      setUpdating(true);
+      const token = localStorage.getItem('token');
+      const response = await updateSettings(
+        tempSettings.currentTerm,
+        tempSettings.currentSession,
+        token
+      );
+
+      if (response.success) {
+        setSettings(response.settings);
+        setEditMode(false);
+        setMessage('Settings updated successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      setMessage(error.response?.data?.message || 'Error updating settings');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <section className="admin__settings-section">
+      <div className="settings__card">
+        <h3>Academic Settings</h3>
+        {message && <div className="message-alert">{message}</div>}
+        {!editMode ? (
+          <div className="settings-display">
+            <div className="settings-info">
+              <p>
+                <small>Current Term</small>
+                <div>
+                  {settings.currentTerm === 'First Term' && <h2>1st </h2>}
+                  {settings.currentTerm === 'Second Term' && <h2>2nd </h2>}
+                  {settings.currentTerm === 'Third Term' && <h2>3rd </h2>}
+                  term
+                </div>
+              </p>
+              <p>
+                <small>Current Session</small>
+                <h4>{settings.currentSession}</h4>
+              </p>
+            </div>
+            <button className="btn-edit" onClick={handleEditClick}>
+              Edit
+            </button>
+          </div>
+        ) : (
+          <div className="settings-edit">
+            <div className="settings-form-group">
+              <label>
+                Current Term:
+                <select
+                  value={tempSettings.currentTerm}
+                  onChange={(e) => setTempSettings({ ...tempSettings, currentTerm: e.target.value })}
+                >
+                  <option value="First Term">First Term</option>
+                  <option value="Second Term">Second Term</option>
+                  <option value="Third Term">Third Term</option>
+                </select>
+              </label>
+            </div>
+            <div className="settings-form-group">
+              <label>
+                Current Session:
+                <input
+                  type="text"
+                  value={tempSettings.currentSession}
+                  onChange={(e) => setTempSettings({ ...tempSettings, currentSession: e.target.value })}
+                  placeholder="e.g., 2025/2026"
+                />
+              </label>
+            </div>
+            <div className="settings-actions">
+              <button className="btn-cancel" onClick={handleCancel} disabled={updating}>
+                Cancel
+              </button>
+              <button className="btn-save" onClick={handleSave} disabled={updating}>
+                {updating ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AddNewStudent() {
   const [classOptions, setClassOptions] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [studentForm, setStudentForm] = useState({
@@ -48,99 +159,75 @@ export default function AcademicsPortal() {
     department: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [studentMessage, setStudentMessage] = useState('');
-  const [studentError, setStudentError] = useState('');
-  const [studentSubmitting, setStudentSubmitting] = useState(false);
-
-  // Student search and filter state
-  const [studentSearchQuery, setStudentSearchQuery] = useState('');
-  const [showStudentSearch, setShowStudentSearch] = useState(false);
-  const [studentFilterClass, setStudentFilterClass] = useState('');
-  const [studentFilterStatus, setStudentFilterStatus] = useState('');
-  const [showStudentFilters, setShowStudentFilters] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const userRole = getUserRole();
-    setRole(userRole);
-    
-    if (userRole === 'admin') {
-      fetchStaff();
-      fetchStudents();
-      fetchClassOptions();
-      fetchNextStudentUsername();
-    }
+    const initialize = async () => {
+      await Promise.all([fetchClassOptions(), fetchNextStudentUsername()]);
+    };
+    initialize();
   }, []);
 
   const fetchClassOptions = async () => {
     try {
       const response = await getAllClasses();
-      if (response.success && Array.isArray(response.classes)) {
-        const classNames = response.classes.map((cls) => cls.class).filter(Boolean);
-        setClassOptions([...new Set(classNames)]);
-        const departments = [...new Set(response.classes.map((cls) => cls.department).filter(Boolean))];
-        setDepartmentOptions(departments);
-      }
-    } catch (error) {
-      console.error('Error fetching class options:', error);
+      const payload = response?.classes || response?.data || response;
+      const classes = Array.isArray(payload) ? payload : Array.isArray(payload?.classes) ? payload.classes : [];
+      const classNames = classes.map((cls) => cls.class).filter(Boolean);
+      setClassOptions([...new Set(classNames)]);
+      const departments = [...new Set(classes.map((cls) => cls.department).filter(Boolean))];
+      setDepartmentOptions(departments);
+    } catch (err) {
+      console.error('Error fetching class options:', err);
     }
-  };
-
-  const handleStudentInputChange = (field, value) => {
-    if (field === 'username') {
-      return;
-    }
-    
-    setStudentForm((prev) => {
-      const updated = { ...prev, [field]: value };
-      
-      // Auto-generate password when lastName or username changes
-      if (field === 'lastName' || field === 'username') {
-        const lastName = field === 'lastName' ? value : prev.lastName;
-        const username = field === 'username' ? value : prev.username;
-        
-        if (lastName && username) {
-          const firstFourOfLastName = lastName.slice(0, 4).toLowerCase();
-          const lastThreeOfUsername = username.slice(-3).toLowerCase();
-          updated.password = firstFourOfLastName + lastThreeOfUsername;
-        }
-      }
-      
-      return updated;
-    });
   };
 
   const fetchNextStudentUsername = async () => {
     try {
       const response = await getNextStudentUsername();
-      if (response.success && response.nextUsername) {
+      if (response?.nextUsername) {
         setStudentForm((prev) => ({ ...prev, username: response.nextUsername }));
       }
-    } catch (error) {
-      console.error('Error fetching next student username:', error);
+    } catch (err) {
+      console.error('Error fetching next student username:', err);
     }
   };
 
-  const handleAddStudent = async (event) => {
+  const handleInputChange = (field, value) => {
+    setStudentForm((prev) => {
+      const nextForm = { ...prev, [field]: value };
+      if (field === 'lastName' || field === 'username') {
+        const lastName = field === 'lastName' ? value : prev.lastName;
+        const username = field === 'username' ? value : prev.username;
+        if (lastName && username) {
+          nextForm.password = lastName.slice(0, 4).toLowerCase() + username.slice(-3).toLowerCase();
+        }
+      }
+      return nextForm;
+    });
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setStudentMessage('');
-    setStudentError('');
+    setMessage('');
+    setError('');
 
     const { firstName, lastName, username, password, class: studentClass } = studentForm;
-
     if (!firstName || !lastName || !username || !password || !studentClass) {
-      setStudentError('First name, last name, username, password, and class are required.');
+      setError('First name, last name, username, password, and class are required.');
       return;
     }
 
     try {
-      setStudentSubmitting(true);
-      const email = username.includes('@') ? username : `${username}@attanzeel.edu.ng`;
+      setSubmitting(true);
       const payload = {
         firstName: firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase(),
         lastName: lastName.trim().charAt(0).toUpperCase() + lastName.trim().slice(1).toLowerCase(),
         username: username.trim().toLowerCase(),
         password,
-        email,
+        email: username.includes('@') ? username : `${username}@attanzeel.edu.ng`,
         role: 'student',
         admissionNumber: username.trim().toUpperCase(),
         class: studentClass,
@@ -149,28 +236,130 @@ export default function AcademicsPortal() {
 
       const response = await register(payload);
       if (response.success) {
-        setStudentMessage('Student added successfully.');
+        setMessage('Student added successfully.');
         setStudentForm({ firstName: '', lastName: '', username: '', password: '', class: '', department: '' });
         await fetchNextStudentUsername();
+      } else {
+        setError(response.message || 'Failed to add student.');
       }
-    } catch (error) {
-      setStudentError(typeof error === 'string' ? error : error.response?.data?.message || 'Could not add student.');
-      console.error('Error adding student:', error);
+    } catch (err) {
+      setError(typeof err === 'string' ? err : err.response?.data?.message || 'Could not add student.');
+      console.error('Error adding student:', err);
     } finally {
-      setStudentSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
-  };
+  return (
+    <div className="student-form-section">
+      <h3>Add New Student</h3>
+      {message && <div className="success-alert">{message}</div>}
+      {error && <div className="error-alert">{error}</div>}
+      <form className="student-form" onSubmit={handleSubmit}>
+        <div className="form-row">
+          <label className="form-label">
+            First Name *
+            <input
+              type="text"
+              value={studentForm.firstName}
+              onChange={(e) => handleInputChange('firstName', e.target.value)}
+              required
+            />
+          </label>
+          <label className="form-label">
+            Last Name *
+            <input
+              type="text"
+              value={studentForm.lastName}
+              onChange={(e) => handleInputChange('lastName', e.target.value)}
+              required
+            />
+          </label>
+        </div>
+        <div className="form-row">
+          <label className="form-label">
+            Username *
+            <input
+              type="text"
+              value={studentForm.username}
+              placeholder={studentForm.username ? '' : 'Loading next username...'}
+              readOnly
+              required
+            />
+          </label>
+          <label className="form-label">
+            Password *
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={studentForm.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </label>
+        </div>
+        <div className="form-row">
+          <label className="form-label">
+            Class *
+            <select
+              value={studentForm.class}
+              onChange={(e) => handleInputChange('class', e.target.value)}
+              required
+            >
+              <option value="">Select class</option>
+              {classOptions.map((classOption) => (
+                <option key={classOption} value={classOption}>{classOption}</option>
+              ))}
+            </select>
+          </label>
+          <label className="form-label">
+            Department
+            <select
+              value={studentForm.department}
+              onChange={(e) => handleInputChange('department', e.target.value)}
+            >
+              <option value="">Select department (optional)</option>
+              {departmentOptions.map((departmentOption) => (
+                <option key={departmentOption} value={departmentOption}>{departmentOption}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <button type="submit" className="btn-submit" disabled={submitting}>
+          {submitting ? 'Adding student...' : 'Add Student'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function StaffManagement() {
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [modalType, setModalType] = useState('view');
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
 
   const fetchStaff = async () => {
     try {
       setLoading(true);
       setError('');
       const staffData = await getAllStaff();
-      setStaff(staffData);
+      setStaff(Array.isArray(staffData) ? staffData : []);
     } catch (err) {
       setError(err);
     } finally {
@@ -178,44 +367,14 @@ export default function AcademicsPortal() {
     }
   };
 
-  const fetchStudents = async () => {
-    try {
-      const response = await getAllStudents();
-      if (response.success && Array.isArray(response.students)) {
-        setStudents(response.students);
-      }
-    } catch (err) {
-      console.error('Error fetching students:', err);
-    }
-  };
-
-  const handleViewStaff = async (staffId) => {
-    try {
-      const staffData = await getStaffById(staffId);
-      setSelectedStaff(staffData);
-      setModalType('view');
-      setShowModal(true);
-    } catch (err) {
-      setError(err);
-    }
-  };
-
-  const handleApproveClick = (staffData) => {
-    setSelectedStaff(staffData);
-    setModalType('approve');
+  const openModal = (staffMember, type) => {
+    setSelectedStaff(staffMember);
+    setModalType(type);
     setShowModal(true);
   };
 
-  const handleDisapproveClick = (staffData) => {
-    setSelectedStaff(staffData);
-    setModalType('disapprove');
-    setShowModal(true);
-  };
-
-  const handleDeleteClick = (staffData) => {
-    setSelectedStaff(staffData);
-    setModalType('delete');
-    setShowModal(true);
+  const closeModal = () => {
+    if (!loading) setShowModal(false);
   };
 
   const handleConfirmApproval = async (isApproved) => {
@@ -246,38 +405,167 @@ export default function AcademicsPortal() {
     }
   };
 
-  const handleViewStudent = async (studentId) => {
+  return (
+    <div className="staff-management-section">
+      {loading && staff.length === 0 ? (
+        <LoadingEffect message="Loading staff" />
+      ) : (
+        <>
+          {error && <div className="error-alert">{error}</div>}
+          {staff.length === 0 ? (
+            <EmptyState message="No staff members found." />
+          ) : (
+            <table className="staff-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th className="mobile-view">Title</th>
+                  <th className="mobile-view">Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {staff.map((staffMember) => (
+                  <tr key={staffMember.id || staffMember._id}>
+                    <td>{staffMember.firstName} {staffMember.lastName}</td>
+                    <td className="mobile-view">{staffMember.title}</td>
+                    <td className="mobile-view">
+                      <span className={`status-badge ${staffMember.isActive ? 'approved' : 'pending'}`}>
+                        {staffMember.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="btn-small btn-view" onClick={() => openModal(staffMember, 'view')}>
+                        View
+                      </button>
+                      {!staffMember.isActive ? (
+                        <button className="btn-small btn-approve mobile-view" onClick={() => openModal(staffMember, 'approve')}>
+                          Approve
+                        </button>
+                      ) : (
+                        <button className="btn-small btn-disapprove mobile-view" onClick={() => openModal(staffMember, 'disapprove')}>
+                          Deactivate
+                        </button>
+                      )}
+                      <button className="btn-small btn-delete mobile-view" onClick={() => openModal(staffMember, 'delete')}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      {showModal && selectedStaff && (
+        <div className="profile-modal-overlay" onClick={closeModal}>
+            {modalType === 'view' ? (
+              <div className="modal-box-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-box-body">
+                  <ProfileBox
+                    userInfo={selectedStaff}
+                    onApprove={() => openModal(selectedStaff, 'approve')}
+                    onDisapprove={() => openModal(selectedStaff, 'disapprove')}
+                    onDelete={() => openModal(selectedStaff, 'delete')}
+                  />
+                </div>
+                <div className="modal-footer">
+                  <button className="box-btn" onClick={closeModal}><X size={16}/></button>
+                </div>
+              </div>
+            ) : (
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <h4>{modalType === 'approve' ? 'Activate Staff Member' : modalType === 'disapprove' ? 'Deactivate Staff Member' : 'Delete Staff Member'}</h4>
+                <div className="modal-body">
+                  <p>
+                    Are you sure you want to {modalType === 'approve' ? 'activate' : modalType === 'disapprove' ? 'deactivate' : 'delete'}{' '}
+                    <strong>{selectedStaff.firstName} {selectedStaff.lastName}</strong>?
+                  </p>
+                  {modalType === 'delete' && <p>This action cannot be undone.</p>}
+                </div>
+                <div className="modal-footer">
+                  <button className="btn-secondary" onClick={closeModal} disabled={loading}>
+                    Cancel
+                  </button>
+                  <button
+                    className={`btn-primary ${modalType === 'delete' ? 'btn-delete' : modalType === 'approve' ? 'btn-approve' : 'btn-disapprove'}`}
+                    onClick={modalType === 'delete' ? handleConfirmDelete : () => handleConfirmApproval(modalType === 'approve')}
+                    disabled={loading}
+                  >
+                    {loading ? (modalType === 'delete' ? 'Deleting...' : modalType === 'approve' ? 'Activating...' : 'Deactivating...') : modalType === 'delete' ? 'Delete' : modalType === 'approve' ? 'Activate' : 'Deactivate'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+      )}
+    </div>
+  );
+}
+
+function StudentsManagement() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [modalType, setModalType] = useState('view');
+  const [showModal, setShowModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterClass, setFilterClass] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [activeFilter, setActiveFilter] = useState(false);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
     try {
-      const studentData = await getStudentById(studentId);
-      if (studentData.success) {
-        setSelectedStudent(studentData.student);
-        setModalType('view');
-        setShowModal(true);
-      }
+      setLoading(true);
+      const response = await getAllStudents();
+      const payload = response?.students || response?.data || response;
+      setStudents(Array.isArray(payload) ? payload : []);
     } catch (err) {
+      console.error('Error fetching students:', err);
       setError(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleApproveStudentClick = (studentData) => {
-    setSelectedStudent(studentData);
-    setModalType('approve');
+  const openModal = (student, type) => {
+    setSelectedStudent(student);
+    setModalType(type);
     setShowModal(true);
   };
 
-  const handleDisapproveStudentClick = (studentData) => {
-    setSelectedStudent(studentData);
-    setModalType('disapprove');
-    setShowModal(true);
+  const closeModal = () => {
+    if (!loading) setShowModal(false);
   };
 
-  const handleDeleteStudentClick = (studentData) => {
-    setSelectedStudent(studentData);
-    setModalType('delete');
-    setShowModal(true);
-  };
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const search = searchQuery.trim().toLowerCase();
+      const matchesSearch = !search ||
+        student.firstName.toLowerCase().includes(search) ||
+        student.lastName.toLowerCase().includes(search) ||
+        student.username.toLowerCase().includes(search) ||
+        student.class.toLowerCase().includes(search);
+      const matchesClass = !filterClass || student.class === filterClass;
+      const matchesStatus = !filterStatus ||
+        (filterStatus === 'active' && student.isActive) ||
+        (filterStatus === 'inactive' && !student.isActive);
+      return matchesSearch && matchesClass && matchesStatus;
+    });
+  }, [students, searchQuery, filterClass, filterStatus]);
 
-  const handleConfirmStudentApproval = async (isApproved) => {
+  const classOptions = useMemo(() => {
+    return [...new Set(students.map((student) => student.class).filter(Boolean))];
+  }, [students]);
+
+  const handleConfirmApproval = async (isApproved) => {
     try {
       setLoading(true);
       await updateStudentApproval(selectedStudent.id, isApproved);
@@ -291,7 +579,7 @@ export default function AcademicsPortal() {
     }
   };
 
-  const handleConfirmStudentDelete = async () => {
+  const handleConfirmDelete = async () => {
     try {
       setLoading(true);
       await deleteStudent(selectedStudent.id);
@@ -305,382 +593,87 @@ export default function AcademicsPortal() {
     }
   };
 
-  // Filter students based on search query and filters
-  const getFilteredStudents = () => {
-    return students.filter((student) => {
-      // Search filter
-      const searchLower = studentSearchQuery.toLowerCase();
-      const matchesSearch = !studentSearchQuery || 
-        student.firstName.toLowerCase().includes(searchLower) ||
-        student.lastName.toLowerCase().includes(searchLower) ||
-        student.username.toLowerCase().includes(searchLower) ||
-        student.class.toLowerCase().includes(searchLower);
-
-      // Class filter
-      const matchesClass = !studentFilterClass || student.class === studentFilterClass;
-
-      // Status filter
-      const matchesStatus = !studentFilterStatus || 
-        (studentFilterStatus === 'active' && student.isActive) ||
-        (studentFilterStatus === 'inactive' && !student.isActive);
-
-      return matchesSearch && matchesClass && matchesStatus;
-    });
-  };
-
-  const AcademicsSettings = () => {
-    const [settings, setSettings] = useState({
-      currentTerm: 'First Term',
-      currentSession: '2025/2026',
-    });
-    const [tempSettings, setTempSettings] = useState({
-      currentTerm: 'First Term',
-      currentSession: '2025/2026',
-    });
-    const [editMode, setEditMode] = useState(false);
-    const [updating, setUpdating] = useState(false);
-    const [message, setMessage] = useState('');
-
-    useEffect(() => {
-      const loadSettings = async () => {
-        try {
-          const response = await getSettings();
-          if (response.success) {
-            setSettings(response.settings);
-            setTempSettings(response.settings);
-          }
-        } catch (error) {
-          console.error('Error fetching settings:', error);
-        }
-      };
-
-      loadSettings();
-    }, []);
-
-    const handleEditClick = () => {
-      setEditMode(true);
-    };
-
-    const handleCancel = () => {
-      setEditMode(false);
-      setTempSettings(settings);
-      setMessage('');
-    };
-
-    const handleSave = async () => {
-      try {
-        setUpdating(true);
-        const token = localStorage.getItem('token');
-        const response = await updateSettings(
-          tempSettings.currentTerm,
-          tempSettings.currentSession,
-          token
-        );
-
-        if (response.success) {
-          setSettings(response.settings);
-          setEditMode(false);
-          setMessage('Settings updated successfully!');
-          setTimeout(() => setMessage(''), 3000);
-        }
-      } catch (error) {
-        console.error('Error updating settings:', error);
-        setMessage(error.response?.data?.message || 'Error updating settings');
-      } finally {
-        setUpdating(false);
-      }
-    };
-
-    return (
-      <section className="admin__settings-section">
-        <div className="settings__card">
-          <h3>Academic Settings</h3>
-          {message && (
-            <div className="message-alert">
-              {message}
-            </div>
-          )}
-
-          {!editMode ? (
-            <div className="settings-display">
-              <div className="settings-info">
-                <p><strong>Current Term:</strong> {settings.currentTerm}</p>
-                <p><strong>Current Session:</strong> {settings.currentSession}</p>
+  return (
+    <div className="students-management-section">
+      {loading && students.length === 0 ? (
+        <LoadingEffect message="Loading students" />
+      ) : (
+        <>
+          <div className="search-filter-container">
+            <div className="filter-group">
+              <div className="icon-btn" onClick={() => setActiveFilter((prev) => !prev)} title="Toggle filters">
+                <Filter size={18} />
               </div>
-              <button className="btn-edit" onClick={handleEditClick}>
-                Edit
-              </button>
-            </div>
-          ) : (
-            <div className="settings-edit">
-              <div className="form-group">
-                <label>Current Term:</label>
-                <select
-                  value={tempSettings.currentTerm}
-                  onChange={(e) => setTempSettings({ ...tempSettings, currentTerm: e.target.value })}
-                >
-                  <option value="First Term">First Term</option>
-                  <option value="Second Term">Second Term</option>
-                  <option value="Third Term">Third Term</option>
+
+              <div className={`filter-menu ${activeFilter ? 'active-filter' : ''}`}>
+                <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
+                  <option value="">All classes</option>
+                  {classOptions.map((classOption) => (
+                    <option key={classOption} value={classOption}>{classOption}</option>
+                  ))}
+                </select>
+
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                  <option value="">All status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
-
-              <div className="form-group">
-                <label>Current Session:</label>
-                <input
-                  type="text"
-                  value={tempSettings.currentSession}
-                  onChange={(e) => setTempSettings({ ...tempSettings, currentSession: e.target.value })}
-                  placeholder="e.g., 2025/2026"
-                />
-              </div>
-
-              <div className="settings-actions">
-                <button className="btn-cancel" onClick={handleCancel} disabled={updating}>
-                  Cancel
-                </button>
-                <button className="btn-save" onClick={handleSave} disabled={updating}>
-                  {updating ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
             </div>
-          )}
-        </div>
-      </section>
-    );
-  };
 
-  const AddNewStudent = () => {
-    return (
-      <div className="student-form-section">
-        <h3>Add New Student</h3>
-        {studentMessage && (
-          <div className="success-alert">
-            {studentMessage}
-          </div>
-        )}
-        {studentError && (
-          <div className="error-alert">
-            {studentError}
-          </div>
-        )}
-        <form className="student-form" onSubmit={handleAddStudent}>
-          <div className="form-row">
-            <label className="form-label">
-              First Name *
+            <div className="search-box">
+              <label htmlFor='search2'><Search size={18} className='label-search-icon' /></label>
               <input
                 type="text"
-                value={studentForm.firstName}
-                onChange={(e) => handleStudentInputChange('firstName', e.target.value)}
-                required
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                name='search2'
               />
-            </label>
-            <label className="form-label">
-              Last Name *
-              <input
-                type="text"
-                value={studentForm.lastName}
-                onChange={(e) => handleStudentInputChange('lastName', e.target.value)}
-                required
-              />
-            </label>
+            </div>
+            
           </div>
 
-          <div className="form-row">
-            <label className="form-label">
-              Username *
-              <input
-                type="text"
-                value={studentForm.username}
-                placeholder={studentForm.username ? '' : 'Loading next username...'}
-                readOnly
-                required
-              />
-            </label>
-            <label className="form-label">
-              Password *
-              <div className="password-input-wrapper">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={studentForm.password}
-                  onChange={(e) => handleStudentInputChange('password', e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={togglePasswordVisibility}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </label>
-          </div>
+          {error && <div className="error-alert">{error}</div>}
 
-          <div className="form-row">
-            <label className="form-label">
-              Class *
-              <select
-                value={studentForm.class}
-                onChange={(e) => handleStudentInputChange('class', e.target.value)}
-                required
-              >
-                <option value="">Select class</option>
-                {classOptions.map((classOption) => (
-                  <option key={classOption} value={classOption}>{classOption}</option>
-                ))}
-              </select>
-            </label>
-            <label className="form-label">
-              Department
-              <select
-                value={studentForm.department}
-                onChange={(e) => handleStudentInputChange('department', e.target.value)}
-              >
-                <option value="">Select department (optional)</option>
-                {departmentOptions.map((departmentOption) => (
-                  <option key={departmentOption} value={departmentOption}>{departmentOption}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            className="btn-submit"
-            disabled={studentSubmitting}
-          >
-            {studentSubmitting ? 'Adding student...' : 'Add Student'}
-          </button>
-        </form>
-      </div>
-    )
-  }
-
-  const StaffManagement = () => {
-    return (
-      loading && staff.length === 0 ? (
-        <div className="loading">Loading staff...</div>
-      ) : (
-        <div className="staff-container">
-          {staff.length === 0 ? (
-            <p>No staff members found.</p>
+          {filteredStudents.length === 0 ? (
+            <EmptyState message="No students found." />
           ) : (
             <table className="staff-table">
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Title</th>
-                  <th>Status</th>
+                  <th className="mobile-view">Username</th>
+                  <th className="mobile-view">Class</th>
+                  <th className="mobile-view">Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {staff.map((staffMember) => (
-                  <tr key={staffMember.id}>
-                    <td>{staffMember.firstName} {staffMember.lastName}</td>
-                    <td>{staffMember.title}</td>
-                    <td>
-                      <span className={`status-badge ${staffMember.isActive ? 'approved' : 'pending'}`}>
-                        {staffMember.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="btn-small btn-view"
-                        onClick={() => handleViewStaff(staffMember.id)}
-                      >
-                        View
-                      </button>
-                      {!staffMember.isActive ? (
-                        <button
-                          className="btn-small btn-approve"
-                          onClick={() => handleApproveClick(staffMember)}
-                        >
-                          Approve
-                        </button>
-                      ) : (
-                        <button
-                          className="btn-small btn-disapprove"
-                          onClick={() => handleDisapproveClick(staffMember)}
-                        >
-                          Deactivate
-                        </button>
-                      )}
-                      <button
-                        className="btn-small btn-delete"
-                        onClick={() => handleDeleteClick(staffMember)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )
-    )
-  }
-
-  const StudentsManagement = () => {
-    return (
-      loading && students.length === 0 ? (
-        <div className="loading">Loading students...</div>
-      ) : (
-        <div className="staff-container">
-          {getFilteredStudents().length === 0 ? (
-            <p>No students found.</p>
-          ) : (
-            <table className="staff-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Username</th>
-                  <th>Class</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getFilteredStudents().map((student) => (
-                  <tr key={student.id}>
+                {filteredStudents.map((student) => (
+                  <tr key={student.id || student._id}>
                     <td>{student.firstName} {student.lastName}</td>
-                    <td>{student.username}</td>
-                    <td>{student.class}</td>
-                    <td>
+                    <td className="mobile-view">{student.username}</td>
+                    <td className="mobile-view">{student.class}</td>
+                    <td className="mobile-view">
                       <span className={`status-badge ${student.isActive ? 'approved' : 'pending'}`}>
                         {student.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td>
-                      <button
-                        className="btn-small btn-view"
-                        onClick={() => handleViewStudent(student.id)}
-                      >
+                      <button className="btn-small btn-view" onClick={() => openModal(student, 'view')}>
                         View
                       </button>
                       {!student.isActive ? (
-                        <button
-                          className="btn-small btn-approve"
-                          onClick={() => handleApproveStudentClick(student)}
-                        >
+                        <button className="btn-small btn-approve mobile-view" onClick={() => openModal(student, 'approve')}>
                           Approve
                         </button>
                       ) : (
-                        <button
-                          className="btn-small btn-disapprove"
-                          onClick={() => handleDisapproveStudentClick(student)}
-                        >
+                        <button className="btn-small btn-disapprove mobile-view" onClick={() => openModal(student, 'disapprove')}>
                           Deactivate
                         </button>
                       )}
-                      <button
-                        className="btn-small btn-delete"
-                        onClick={() => handleDeleteStudentClick(student)}
-                      >
+                      <button className="btn-small btn-delete mobile-view" onClick={() => openModal(student, 'delete')}>
                         Delete
                       </button>
                     </td>
@@ -689,237 +682,128 @@ export default function AcademicsPortal() {
               </tbody>
             </table>
           )}
-        </div>
-      )
-    )
-  }
+        </>
+      )}
+
+      {showModal && selectedStudent && (
+        <div className="profile-modal-overlay" onClick={closeModal}>
+          {modalType === 'view' ? (
+            <div className="modal-box-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-box-body">
+                  <ProfileBox
+                    userInfo={selectedStudent}
+                    onApprove={() => openModal(selectedStudent, 'approve')}
+                    onDisapprove={() => openModal(selectedStudent, 'disapprove')}
+                    onDelete={() => openModal(selectedStudent, 'delete')}
+                  />
+                </div>
+
+                <div className="modal-footer">
+                  <button className="box-btn" onClick={closeModal}><X size={20}/></button>
+                </div>
+            </div>
+            ) : (
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <h3>{modalType === 'approve' ? 'Activate Student' : modalType === 'disapprove' ? 'Deactivate Student' : 'Delete Student'}</h3>
+                <div className="modal-body">
+                  <p>
+                    Are you sure you want to {modalType === 'approve' ? 'activate' : modalType === 'disapprove' ? 'deactivate' : 'delete'}{' '}
+                    <strong>{selectedStudent.firstName} {selectedStudent.lastName}</strong>?
+                  </p>
+                  {modalType === 'delete' && <p>This action cannot be undone.</p>}
+                </div>
+                <div className="modal-footer">
+                  <button className="btn-secondary" onClick={closeModal} disabled={loading}>
+                    Cancel
+                  </button>
+                  <button
+                    className={`btn-primary ${modalType === 'delete' ? 'btn-delete' : modalType === 'approve' ? 'btn-approve' : 'btn-disapprove'}`}
+                    onClick={modalType === 'delete' ? handleConfirmDelete : () => handleConfirmApproval(modalType === 'approve')}
+                    disabled={loading}
+                  >
+                    {loading ? (modalType === 'delete' ? 'Deleting...' : modalType === 'approve' ? 'Activating...' : 'Deactivating...') : modalType === 'delete' ? 'Delete' : modalType === 'approve' ? 'Activate' : 'Deactivate'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+      )}
+    </div>
+  );
+}
+
+export default function AcademicsPortal() {
+  const [role, setRole] = useState(null);
+  const [activeModule, setActiveModule] = useState(null);
+
+  useEffect(() => {
+    setRole(getUserRole());
+  }, []);
 
   if (role !== 'admin') {
     return <UnderDevelopment section="Academics" />;
   }
 
-
-
   const renderModuleContent = () => {
     switch (activeModule) {
-      case 'settings': return <div className="module-placeholder"><AcademicsSettings/></div>;
-      case 'add_student': return <div className="module-placeholder"><AddNewStudent/></div>;
-      case 'staff': return <div className="module-placeholder"><StaffManagement/></div>;
-      case 'students': return <div className="module-placeholder"><StudentsManagement/></div>;
-      default: return null;
+      case 'settings':
+        return <AcademicsSettings />;
+      case 'add_student':
+        return <AddNewStudent />;
+      case 'staff':
+        return <StaffManagement />;
+      case 'students':
+        return <StudentsManagement />;
+      default:
+        return null;
     }
   };
 
   return (
-    <>
-      <div className={`command-center ${activeModule ? 'module-active' : ''}`}>
-        <header className="global-header">
-          <h1>ACADEMICS MANAGEMENT</h1>
-          {activeModule && (
-            <button className="back-button" onClick={() => setActiveModule(null)}>
-              <ChevronLeft size={16} /> Back
-            </button>
-          )}
-        </header>
-
-        <nav className="navigation-layer">
-          <div className="card-grid">
-            {AcademicsModules.map((module) => (
-              <div 
-                key={module.id}
-                className={`nav-card ${activeModule === module.id ? 'is-active' : ''}`}
-                style={{ '--accent': module.color }}
-                onClick={() => setActiveModule(module.id)}
-                role="button"
-                tabIndex="0"
-                onKeyDown={(e) => e.key === 'Enter' && setActiveModule(module.id)}
-              >
-                <div className="nav-card__icon">
-                  <module.icon size={activeModule ? 20 : 32} strokeWidth={1.5} />
-                </div>
-                <div className="nav-card__content">
-                  <h3>{module.title}</h3>
-                  {!activeModule && <p>{module.desc}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </nav>
-
+    <div className={`command-center ${activeModule ? 'module-active' : ''}`}>
+      <header className="global-header">
+        <h1>ACADEMICS MANAGEMENT</h1>
         {activeModule && (
-          <main className="module-workspace">
-            <div className="workspace-container">
-              {renderModuleContent()}
-            </div>
-          </main>
+          <button className="back-button" onClick={() => setActiveModule(null)}>
+            <ChevronLeft size={16} /> Back
+          </button>
         )}
-      </div>
+      </header>
 
-      
-
-
-    <div className="academics-modals">
-        {error && (
-          <div className="error-alert">
-            {error}
-          </div>
-        )}
-
-
-      {showModal && (
-        <div className="modal-overlay" onClick={() => !loading && setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            {modalType === 'view' && selectedStaff && (
-              <>
-                <h3>Staff Details</h3>
-                <div className="modal-body">
-                  <p><strong>Name:</strong> {selectedStaff.firstName} {selectedStaff.lastName}</p>
-                  <p><strong>Title:</strong> {selectedStaff.title}</p>
-                  <p><strong>Email:</strong> {selectedStaff.email}</p>
-                  <p><strong>Username:</strong> {selectedStaff.username}</p>
-                  <p><strong>Classes:</strong> {selectedStaff.classes || 'N/A'}</p>
-                  <p><strong>Status:</strong> {selectedStaff.isActive ? 'Active' : 'Inactive'}</p>
-                  <p><strong>Active:</strong> {selectedStaff.isActive ? 'Yes' : 'No'}</p>
-                  <p><strong>Registered:</strong> {new Date(selectedStaff.createdAt).toLocaleDateString()}</p>
+      <nav className="navigation-layer">
+        <div className="card-grid">
+          {AcademicsModules.map((module) => (
+            <div
+              key={module.id}
+              className={`nav-card ${activeModule === module.id ? 'is-active' : ''}`}
+              style={{ '--accent': module.color }}
+              onClick={() => setActiveModule(module.id)}
+              role="button"
+              tabIndex="0"
+              onKeyDown={(e) => e.key === 'Enter' && setActiveModule(module.id)}
+            >
+              {!activeModule && (
+                <div className="nav-card__back-icon">
+                  <module.icon size={150} strokeWidth={1} />
                 </div>
-              </>
-            )}
-
-            {modalType === 'view' && selectedStudent && (
-              <>
-                <h3>Student Details</h3>
-                <div className="modal-body">
-                  <p><strong>Name:</strong> {selectedStudent.firstName} {selectedStudent.lastName}</p>
-                  <p><strong>Username:</strong> {selectedStudent.username}</p>
-                  <p><strong>Email:</strong> {selectedStudent.email}</p>
-                  <p><strong>Class:</strong> {selectedStudent.class}</p>
-                  <p><strong>Department:</strong> {selectedStudent.department || 'N/A'}</p>
-                  <p><strong>Status:</strong> {selectedStudent.isActive ? 'Active' : 'Inactive'}</p>
-                  <p><strong>Registered:</strong> {new Date(selectedStudent.createdAt).toLocaleDateString()}</p>
-                </div>
-              </>
-            )}
-
-            {modalType === 'approve' && selectedStaff && (
-              <>
-                <h3>Activate Staff Member</h3>
-                <div className="modal-body">
-                  <p>Are you sure you want to activate <strong>{selectedStaff.firstName} {selectedStaff.lastName}</strong>?</p>
-                </div>
-              </>
-            )}
-
-            {modalType === 'approve' && selectedStudent && (
-              <>
-                <h3>Activate Student</h3>
-                <div className="modal-body">
-                  <p>Are you sure you want to activate <strong>{selectedStudent.firstName} {selectedStudent.lastName}</strong>?</p>
-                </div>
-              </>
-            )}
-
-            {modalType === 'disapprove' && selectedStaff && (
-              <>
-                <h3>Deactivate Staff Member</h3>
-                <div className="modal-body">
-                  <p>Are you sure you want to deactivate <strong>{selectedStaff.firstName} {selectedStaff.lastName}</strong>?</p>
-                </div>
-              </>
-            )}
-
-            {modalType === 'disapprove' && selectedStudent && (
-              <>
-                <h3>Deactivate Student</h3>
-                <div className="modal-body">
-                  <p>Are you sure you want to deactivate <strong>{selectedStudent.firstName} {selectedStudent.lastName}</strong>?</p>
-                </div>
-              </>
-            )}
-
-            {modalType === 'delete' && selectedStaff && (
-              <>
-                <h3>Delete Staff Member</h3>
-                <div className="modal-body">
-                  <p>Are you sure you want to delete <strong>{selectedStaff.firstName} {selectedStaff.lastName}</strong>? This action cannot be undone.</p>
-                </div>
-              </>
-            )}
-
-            {modalType === 'delete' && selectedStudent && (
-              <>
-                <h3>Delete Student</h3>
-                <div className="modal-body">
-                  <p>Are you sure you want to delete <strong>{selectedStudent.firstName} {selectedStudent.lastName}</strong>? This action cannot be undone.</p>
-                </div>
-              </>
-            )}
-
-            <div className="modal-footer">
-              {modalType === 'view' ? (
-                <button className="btn-primary" onClick={() => setShowModal(false)}>
-                  Close
-                </button>
-              ) : modalType === 'approve' ? (
-                <>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setShowModal(false)}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="btn-primary btn-approve"
-                    onClick={() => selectedStaff ? handleConfirmApproval(true) : handleConfirmStudentApproval(true)}
-                    disabled={loading}
-                  >
-                    {loading ? 'Activating...' : 'Activate'}
-                  </button>
-                </>
-              ) : modalType === 'disapprove' ? (
-                <>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setShowModal(false)}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="btn-primary btn-disapprove"
-                    onClick={() => selectedStaff ? handleConfirmApproval(false) : handleConfirmStudentApproval(false)}
-                    disabled={loading}
-                  >
-                    {loading ? 'Deactivating...' : 'Deactivate'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => setShowModal(false)}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="btn-primary btn-delete"
-                    onClick={() => selectedStaff ? handleConfirmDelete() : handleConfirmStudentDelete()}
-                    disabled={loading}
-                  >
-                    {loading ? 'Deleting...' : 'Delete'}
-                  </button>
-                </>
               )}
+              <div className="nav-card__icon">
+                <module.icon size={activeModule ? 20 : 28} strokeWidth={1.5} />
+              </div>
+              <div className="nav-card__content">
+                <h3>{module.title}</h3>
+                {!activeModule && <p>{module.desc}</p>}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
+      </nav>
+
+      {activeModule && (
+        <main className="module-workspace">
+          <div className="workspace-container">{renderModuleContent()}</div>
+        </main>
       )}
     </div>
-
-
-    </>
   );
-
-
 }

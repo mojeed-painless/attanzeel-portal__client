@@ -121,6 +121,7 @@ export default function DashboardPortal() {
         <section className="portal__statistics">
 
         {user?.role === 'student' && (
+    
           <div className="portal__statistics-cards">
           {[
             { title: 'SUBJECTS', value: studentStats.subjects, Icon: GraduationCap, color: '#3B82F6' },
