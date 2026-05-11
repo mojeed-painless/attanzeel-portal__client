@@ -30,8 +30,9 @@ const Login = () => {
     const fetchClasses = async () => {
       try {
         const data = await getAllClasses();
+        const classArray = Array.isArray(data) ? data : data?.classes || [];
         const uniqueClasses = Array.from(
-          new Map(data.map((cls) => [cls.class, cls])).values()
+          new Map(classArray.map((cls) => [cls.class, cls])).values()
         );
         setClasses(uniqueClasses);
       } catch (err) {
