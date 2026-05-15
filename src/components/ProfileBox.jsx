@@ -23,6 +23,13 @@ import {
 export default function ProfileBox({ userInfo, onApprove, onDisapprove, onDelete }) {
   const isActive = userInfo?.isActive;
 
+  const formatName = (name) => {
+    if (!name) return '';
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  };
+
+  const fullName = `${formatName(userInfo.firstName)} ${formatName(userInfo.lastName)}`.trim();
+
   return (
     <section className="profile-box__container">
       <div className="profile-box__images">
@@ -37,12 +44,12 @@ export default function ProfileBox({ userInfo, onApprove, onDisapprove, onDelete
 
       <div className="profile-box__header-info">
         <div className="profile-box__header-left">
-            <h5>{userInfo.firstName} {userInfo.lastName}</h5>
+            <h5>{fullName}</h5>
             <p>
                 Admission ID:
                 <span> {userInfo.username}</span>
             </p>
-            <small>{userInfo.class} - {userInfo.department}</small>
+            <small>{userInfo.class} {userInfo.department && `- ${userInfo.department}`}</small>
         </div>
 
         <div className="profile-box__header-right">

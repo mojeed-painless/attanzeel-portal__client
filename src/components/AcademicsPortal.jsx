@@ -21,7 +21,11 @@ import LoadingEffect from './LoadingEffect.jsx';
 import ProfileBox from './ProfileBox.jsx';
 import '../assets/styles/academics-portal.css';
 import { AcademicsModules } from '../data.js';
-import { Eye, EyeOff, Search, Filter, ChevronLeft, SearchX, X } from 'lucide-react';
+import { Eye, EyeOff, Search, Filter, ChevronLeft, SearchX, X,
+  Clock,
+  Calendar,
+  Edit3,
+ } from 'lucide-react';
 
 function AcademicsSettings() {
   const [settings, setSettings] = useState({
@@ -59,11 +63,9 @@ function AcademicsSettings() {
   const handleSave = async () => {
     try {
       setUpdating(true);
-      const token = localStorage.getItem('token');
       const response = await updateSettings(
         tempSettings.currentTerm,
-        tempSettings.currentSession,
-        token
+        tempSettings.currentSession
       );
 
       if (response.success) {
@@ -82,31 +84,46 @@ function AcademicsSettings() {
 
   return (
     <section className="admin__settings-section">
-      <div className="settings__card">
-        <h3>Academic Settings</h3>
-        {message && <div className="message-alert">{message}</div>}
-        {!editMode ? (
-          <div className="settings-display">
-            <div className="settings-info">
-              <p>
-                <small>Current Term</small>
-                <div>
-                  {settings.currentTerm === 'First Term' && <h2>1st </h2>}
-                  {settings.currentTerm === 'Second Term' && <h2>2nd </h2>}
-                  {settings.currentTerm === 'Third Term' && <h2>3rd </h2>}
-                  term
-                </div>
-              </p>
-              <p>
-                <small>Current Session</small>
-                <h4>{settings.currentSession}</h4>
-              </p>
-            </div>
-            <button className="btn-edit" onClick={handleEditClick}>
-              Edit
-            </button>
+      <div className="settings-card">
+        <div className="settings-card__header">
+          <div className="settings-card__title-group">
+            <h2 className="settings-card__title">Academic Settings</h2>
+            <p className="settings-card__subtitle">Manage the active timeline for the institution</p>
+            {message && <div className="message-alert">{message}</div>}
           </div>
-        ) : (
+        
+          {!editMode && <button className="btn-edit" onClick={handleEditClick}>
+            <Edit3 size={16} /> Edit
+          </button>}
+        </div>
+
+      {!editMode ? (
+        <div className="settings-card__body">
+          <div className='info-tile info-tile--blue'>
+            <div className="info-tile__icon info-tile__icon--blue">
+              <Clock size={20} />
+            </div>
+            <div className="info-tile__content">
+              <label>Current Term</label>
+              <span>
+                {settings.currentTerm === 'First Term' ? '1st Term' : 
+                settings.currentTerm === 'Second Term' ? '2nd Term' : 
+                '3rd Term'}
+              </span>
+            </div>
+          </div>
+
+          <div className='info-tile info-tile--green'>
+            <div className="info-tile__icon info-tile__icon--green">
+              <Calendar size={20} />
+            </div>
+            <div className="info-tile__content">
+              <label>Current Session</label>
+              <span>{settings.currentSession}</span>
+            </div>
+          </div>
+        </div>
+      ) : (
           <div className="settings-edit">
             <div className="settings-form-group">
               <label>
@@ -141,7 +158,7 @@ function AcademicsSettings() {
               </button>
             </div>
           </div>
-        )}
+      )}
       </div>
     </section>
   );

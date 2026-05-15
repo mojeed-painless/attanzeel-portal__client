@@ -721,7 +721,30 @@ export default function ResultsPortal() {
                         {!activeModule && <p>{module.desc}</p>}
                       </div>
                     </div>) : 
-                    (user?.role !== 'student' && module.id !== 'check_result') ? (
+                    (user?.role === 'staff' && module.id === 'input_result') ? (
+                    <div 
+                      key={module.id}
+                      className={`nav-card ${activeModule === module.id ? 'is-active' : ''}`}
+                      style={{ '--accent': module.color }}
+                      onClick={() => setActiveModule(module.id)}
+                      role="button"
+                      tabIndex="0"
+                      onKeyDown={(e) => e.key === 'Enter' && setActiveModule(module.id)}
+                    >
+                      {!activeModule && 
+                        <div className="nav-card__back-icon">
+                          <module.icon size={150} strokeWidth={1} />
+                        </div>
+                      }
+                      <div className="nav-card__icon">
+                        <module.icon size={activeModule ? 20 : 32} strokeWidth={1.5} />
+                      </div>
+                      <div className="nav-card__content">
+                        <h3>{module.title}</h3>
+                        {!activeModule && <p>{module.desc}</p>}
+                      </div>
+                    </div>) :
+                    (user?.role === 'admin' && module.id !== 'check_result') ? (
                     <div 
                       key={module.id}
                       className={`nav-card ${activeModule === module.id ? 'is-active' : ''}`}
