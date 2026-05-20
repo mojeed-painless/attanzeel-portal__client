@@ -3,7 +3,6 @@ import UnderDevelopment from './UnderDevelopment.jsx';
 import '../assets/styles/profile-portal.css';
 import { updateProfile, getProfile } from '../api/auth.js';
 import profileImg from '../assets/images/mallam6.webp'
-import asi00276 from '../assets/images/asi00276.jpg'
 import {
   Trophy,
   GraduationCap,
@@ -36,7 +35,7 @@ export default function ProfilePortal() {
     class: '',
   });
 
-  const [profilePicture, setProfilePicture] = useState(asi00276);
+  const [profilePicture, setProfilePicture] = useState(profileImg);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
