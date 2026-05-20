@@ -113,5 +113,38 @@ export const hasRole = (requiredRole) => {
   const role = getUserRole();
   return role === requiredRole;
 };
+// keep single default export at end of file
+/**
+ * Get user profile from backend
+ * @returns {Promise} - Returns user profile data
+ */
+export const getProfile = async () => {
+  try {
+    const response = await apiClient.get('/profile');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to fetch profile';
+  }
+};
+
+/**
+ * Update user profile
+ * @param {Object} profileData - Profile fields to update
+ * @returns {Promise} - Returns updated user data
+ */
+export const updateProfile = async (profileData) => {
+  try {
+    const response = await apiClient.put('/profile', profileData);
+    
+    // Update localStorage with new user data
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to update profile';
+  }
+};
 
 export default apiClient;

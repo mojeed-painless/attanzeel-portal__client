@@ -1,5 +1,6 @@
 import '../assets/styles/profile-box.css';
 import profileImg from '../assets/images/mallam6.webp';
+import asi00276 from '../assets/images/asi00276.jpg'
 import {profile} from '../data.js';
 import {
   Trophy,
@@ -34,12 +35,8 @@ export default function ProfileBox({ userInfo, onApprove, onDisapprove, onDelete
     <section className="profile-box__container">
       <div className="profile-box__images">
         <div className="profile-box__picture">
-          <img src={profileImg} alt="student's passport" />
+          <img src={asi00276} alt="student's passport" />
         </div>
-
-                <div className="edit-box-picture">
-                  <Settings size={14} />
-                </div>
       </div>
 
       <div className="profile-box__header-info">

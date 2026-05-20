@@ -5,6 +5,7 @@ import navLogo from '../assets/images/atlogo.png';
 import { asideNavigation, toSentenceCase } from '../data.js';
 import '../assets/styles/dashboard.css';
 import profileImage from '../assets/images/mallam6.webp';
+import asi00276 from '../assets/images/asi00276.jpg'
 import DashboardPortal from '../components/DashboardPortal.jsx';
 import ProfilePortal from '../components/ProfilePortal.jsx';
 import AcademicsPortal from '../components/AcademicsPortal.jsx';
@@ -153,7 +154,7 @@ const StudentDashboard = () => {
 
               <div className="portal__user-info" onClick={() => setProfileDrop(prev => !prev)}>
                 <div className="portal__profile-image">
-                  <img src={profileImage} alt="" />
+                  <img src={asi00276} alt="" />
                 </div>
 
                 <div className="portal__username">

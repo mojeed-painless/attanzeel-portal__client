@@ -89,7 +89,6 @@ export default function DashboardPortal() {
       const response = await getSettings();
       if (response.success) {
         setSettings(response.settings);
-        setTempSettings(response.settings);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);

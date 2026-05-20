@@ -43,15 +43,22 @@
     backdrop-filter: blur(10px);
     color: white;
     display: flex;
-    padding: 0.2rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem;
     border-radius: 50%;
     border: 2px solid white;
     cursor: pointer;
     transition: all 400ms ease;
+    width: 2.2rem;
+    height: 2.2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .edit-picture:hover {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .profile__header-info {
@@ -150,7 +157,7 @@
 }
 
 .profile__actions {
-    margin: 2rem 2rem 0;
+    margin: 2rem auto 0;
     display: flex;
     justify-content: center;
 }
@@ -161,43 +168,43 @@
     justify-content: center;
 }
 
-.btn-small {
+.profile__btn-small {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    padding: 12px 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.btn-edit {
+.profile__btn-edit {
     background-color: #007bff;
     color: white;
 }
 
-.btn-edit:hover {
+.profile__btn-edit:hover {
     background-color: #0056b3;
 }
 
-.btn-save {
+.profile__btn-save {
     background-color: #28a745;
     color: white;
 }
 
-.btn-save:hover {
+.profile__btn-save:hover {
     background-color: #1e7e34;
 }
 
-.btn-cancel {
+.profile__btn-cancel {
     background-color: #6c757d;
     color: white;
 }
 
-.btn-cancel:hover {
+.profile__btn-cancel:hover {
     background-color: #545b62;
 }
 
