@@ -127,12 +127,14 @@ export default function SpreadSheet({ students = [], subjects = [], initialScore
         return 0;
     }, [secondTermScores]);
 
-    // Helper to calculate average of three terms
+    // Helper to calculate average of available terms, excluding zeros
     const getAverageScore = useCallback((studentId, subject) => {
         const term1 = getFirstTermScore(studentId, subject);
         const term2 = getSecondTermScore(studentId, subject);
         const term3 = getThirdTermScore(studentId, subject);
-        const average = (term1 + term2 + term3) / 3;
+        const validTerms = [term1, term2, term3].filter((score) => score > 0);
+        if (validTerms.length === 0) return 0;
+        const average = validTerms.reduce((sum, score) => sum + score, 0) / validTerms.length;
         return Math.ceil(average);
     }, [getFirstTermScore, getSecondTermScore, getThirdTermScore]);
 
