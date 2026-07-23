@@ -277,7 +277,7 @@ export default function FinalResult({
                         <td>{row.total}</td>
                       </>
                     )}
-                    <td>{row.remark}</td>
+                    <td className="final-result__remark">{row.remark}</td>
                     {!isSeniorSecondary && <td>{row.classLowest}</td>}
                     {!isSeniorSecondary && <td>{row.classHighest}</td>}
                   </tr>
