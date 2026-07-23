@@ -5,15 +5,22 @@ import { grades } from '../data';
 import { getClassSubjects } from '../api/classes';
 import {Download} from 'lucide-react';
 
-const getPrincipalComment = (percentage) => {
+const getPrincipalComment = (percentage, isThirdTerm = false) => {
   const percent = parseFloat(percentage);
 
-    if (percent >= 75) return "Excellent performance. Keep inspiring!";
-    if (percent >= 65) return "Very good result. Keep up the consistency.";
-    if (percent >= 55) return "Good performance. Can improve with more effort.";
-    if (percent >= 50) return "Average performance. Needs focused attention in key areas.";
-    return "Below average. Immediate and serious improvement required.";
-  
+  if (isThirdTerm) {
+    if (percent >= 75) return "Excellent performance. Promoted to the next class";
+    if (percent >= 65) return "Very good result. Promoted to the next class";
+    if (percent >= 55) return "Good performance. Promoted to the next class";
+    if (percent >= 50) return "Average performance. Promoted to the next class";
+    return "Below average. Advised to repeat the class.";
+  }
+
+  if (percent >= 75) return "Excellent performance. Keep inspiring!";
+  if (percent >= 65) return "Very good result. Keep up the consistency.";
+  if (percent >= 55) return "Good performance. Can improve with more effort.";
+  if (percent >= 50) return "Average performance. Needs focused attention in key areas.";
+  return "Below average. Immediate and serious improvement required.";
 };
 
 const normalizeScores = (scores = {}) => {
@@ -311,7 +318,7 @@ export default function FinalResult({
 
               <div>
                 <span>Principal's Comment:</span>
-                <span>{getPrincipalComment(percentage)}</span>
+                <span>{getPrincipalComment(percentage, isThirdTerm)}</span>
               </div>
             </div>
 
