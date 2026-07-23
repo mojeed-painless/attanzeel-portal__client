@@ -85,6 +85,10 @@
     width: 15rem;
 }
 
+.final-result__average {
+    background: var(--color_green);
+}
+
 .final-result__remark {
     width: 8rem;
 }

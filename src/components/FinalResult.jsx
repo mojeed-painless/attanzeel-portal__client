@@ -268,7 +268,7 @@ export default function FinalResult({
                         <td>{row.firstScore}</td>
                         <td>{row.secondScore}</td>
                         <td>{row.thirdScore}</td>
-                        <td>{row.average}</td>
+                        <td className="final-result__average">{row.average}</td>
                       </>
                     ) : (
                       <>
