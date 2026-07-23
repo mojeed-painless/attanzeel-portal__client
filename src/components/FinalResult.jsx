@@ -76,7 +76,7 @@ export default function FinalResult({
       return 'F9';
     } else {
       if (score >= 75) return 'Excellent';
-      if (score >= 66) return 'V.Good';
+      if (score >= 66) return 'Very Good';
       if (score >= 55) return 'Good';
       if (score >= 50) return 'Average';
       return 'B.Average';
