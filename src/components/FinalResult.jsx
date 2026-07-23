@@ -7,11 +7,19 @@ import {Download} from 'lucide-react';
 
 const getPrincipalComment = (percentage) => {
   const percent = parseFloat(percentage);
-  if (percent >= 80) return "Excellent performance. Keep inspiring!";
-  if (percent >= 70) return "Very good result. Keep up the consistency.";
-  if (percent >= 60) return "Good performance. Can improve with more effort.";
-  if (percent >= 50) return "Average performance. Needs focused attention in key areas.";
-  return "Below average. Immediate and serious improvement required.";
+  if (isThirdTerm) {
+    if (percent >= 75) return "Excellent performance. Promoted to the next class";
+    if (percent >= 65) return "Very good result. Promoted to the next class";
+    if (percent >= 55) return "Good performance. Promoted to the next class";
+    if (percent >= 50) return "Average performance. Promoted to the next class";
+    return "Below average. Advised to repeat the class.";
+  } else {
+    if (percent >= 75) return "Excellent performance. Keep inspiring!";
+    if (percent >= 65) return "Very good result. Keep up the consistency.";
+    if (percent >= 55) return "Good performance. Can improve with more effort.";
+    if (percent >= 50) return "Average performance. Needs focused attention in key areas.";
+    return "Below average. Immediate and serious improvement required.";
+  }
 };
 
 const normalizeScores = (scores = {}) => {
