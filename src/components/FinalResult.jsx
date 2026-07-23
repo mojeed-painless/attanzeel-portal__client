@@ -238,8 +238,11 @@ export default function FinalResult({
 
           <div>
             <div className="number"><span>TOTAL NO. CLASS:</span> {classStudents.length || 0}</div>
-            {/* <div className="position"><span>POSITION:</span> {position}</div> */}
-            <div className="position"><span>POSITION:</span> </div>
+            {isThirdTerm ? (
+              <div className="position"><span>POSITION:</span> {position}</div>
+            ) : (
+              <div className="position"><span>POSITION:</span> </div>
+            )}
           </div>
         </section>
 
