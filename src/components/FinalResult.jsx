@@ -104,10 +104,22 @@ export default function FinalResult({
   }, [className, department]);
 
   const studentScores = normalizeScores(studentResult.scores);
-  const subjects = useMemo(
-    () => Object.keys(studentScores || {}).filter((subject) => !removedSubjectCodes.includes(subject)),
-    [studentScores, removedSubjectCodes]
-  );
+  const currentFirstTermScores = normalizeScores(firstTermScores[currentStudentId] || {});
+  const currentSecondTermScores = normalizeScores(secondTermScores[currentStudentId] || {});
+
+  const subjects = useMemo(() => {
+    if (!isThirdTerm) {
+      return Object.keys(studentScores || {}).filter((subject) => !removedSubjectCodes.includes(subject));
+    }
+
+    const allKeys = new Set([
+      ...Object.keys(studentScores || {}),
+      ...Object.keys(currentFirstTermScores || {}),
+      ...Object.keys(currentSecondTermScores || {}),
+    ]);
+
+    return Array.from(allKeys).filter((subject) => !removedSubjectCodes.includes(subject));
+  }, [studentScores, currentFirstTermScores, currentSecondTermScores, removedSubjectCodes, isThirdTerm]);
 
   const subjectRows = useMemo(() => {
     return subjects.map((subject) => {
