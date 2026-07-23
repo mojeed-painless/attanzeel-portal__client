@@ -218,7 +218,7 @@ export default function FinalResult({
     const index = sorted.indexOf(studentTotal);
     if (index === -1) return 'N/A';
     const suffix = index === 0 ? 'ST' : index === 1 ? 'ND' : index === 2 ? 'RD' : 'TH';
-    return `${index + 1}${suffix}`;
+    return `${index + 1} ${suffix}`;
   }, [classStudents, subjectRows, subjects, isThirdTerm, firstTermScores, secondTermScores]);
 
   return (
