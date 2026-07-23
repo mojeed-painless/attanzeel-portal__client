@@ -87,6 +87,8 @@
 
 .final-result__average {
     background: var(--color_green);
+    color: white;
+    font-weight: 600;
 }
 
 .final-result__remark {
