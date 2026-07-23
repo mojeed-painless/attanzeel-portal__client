@@ -19,6 +19,28 @@ const normalizeScores = (scores = {}) => {
   return typeof scores.toObject === 'function' ? scores.toObject() : scores;
 };
 
+const getScoreFromTermValue = (value) => {
+  if (!value && value !== 0) return 0;
+  if (typeof value === 'object') {
+    const test = Number(value.test) || 0;
+    const exam = Number(value.exam) || 0;
+    if (test || exam) return test + exam;
+    return Number(value.score || value.total || 0) || 0;
+  }
+  return Number(value) || 0;
+};
+
+const getScoreBySubject = (scores, subjectCode) => {
+  const normalized = normalizeScores(scores || {});
+  return getScoreFromTermValue(normalized[subjectCode]);
+};
+
+const getAverageFromScores = (values = []) => {
+  const validScores = values.filter((value) => Number(value) > 0);
+  if (validScores.length === 0) return 0;
+  return Math.ceil(validScores.reduce((sum, value) => sum + Number(value), 0) / validScores.length);
+};
+
 export default function FinalResult({
   studentResult = { scores: {}, comments: '' },
   classStudents = [],
@@ -28,8 +50,18 @@ export default function FinalResult({
   className = '',
   removedSubjects = [],
   department = '',
+  firstTermScores = {},
+  secondTermScores = {},
 }) {
+  const isThirdTerm = selectedTerm === 'Third Term';
   const isSeniorSecondary = className && className.toUpperCase().startsWith('SS');
+
+  const resolveStudentId = (studentId) => {
+    if (studentId == null) return null;
+    return typeof studentId === 'object' ? (studentId._id || studentId.toString()) : String(studentId);
+  };
+
+  const currentStudentId = resolveStudentId(studentResult?.studentId || studentResult?.id || studentResult?._id);
 
   const getRemark = (score) => {
     if (isSeniorSecondary) {
@@ -79,15 +111,43 @@ export default function FinalResult({
 
   const subjectRows = useMemo(() => {
     return subjects.map((subject) => {
-      const studentScore = normalizeScores(studentScores[subject] || {});
-      const test = Number(studentScore.test) || 0;
-      const exam = Number(studentScore.exam) || 0;
-      const total = test + exam;
+      if (!isThirdTerm) {
+        const studentScore = normalizeScores(studentScores[subject] || {});
+        const test = Number(studentScore.test) || 0;
+        const exam = Number(studentScore.exam) || 0;
+        const total = test + exam;
+
+        const totalsForSubject = classStudents.map((student) => {
+          const scores = normalizeScores(student.scores || {});
+          const subjectScore = normalizeScores(scores[subject] || {});
+          return (Number(subjectScore.test) || 0) + (Number(subjectScore.exam) || 0);
+        });
+
+        const classLowest = totalsForSubject.length ? Math.min(...totalsForSubject) : 0;
+        const classHighest = totalsForSubject.length ? Math.max(...totalsForSubject) : 0;
+
+        return {
+          subject,
+          test,
+          exam,
+          total,
+          remark: getRemark(total),
+          classLowest,
+          classHighest,
+        };
+      }
+
+      const firstScore = getScoreBySubject(firstTermScores[currentStudentId], subject);
+      const secondScore = getScoreBySubject(secondTermScores[currentStudentId], subject);
+      const thirdScore = getScoreBySubject(studentScores, subject);
+      const average = getAverageFromScores([firstScore, secondScore, thirdScore]);
 
       const totalsForSubject = classStudents.map((student) => {
-        const scores = normalizeScores(student.scores || {});
-        const subjectScore = normalizeScores(scores[subject] || {});
-        return (Number(subjectScore.test) || 0) + (Number(subjectScore.exam) || 0);
+        const studentId = resolveStudentId(student.studentId || student.id || student._id);
+        const firstClass = getScoreBySubject(firstTermScores[studentId], subject);
+        const secondClass = getScoreBySubject(secondTermScores[studentId], subject);
+        const thirdClass = getScoreBySubject(student.scores, subject);
+        return getAverageFromScores([firstClass, secondClass, thirdClass]);
       });
 
       const classLowest = totalsForSubject.length ? Math.min(...totalsForSubject) : 0;
@@ -95,38 +155,50 @@ export default function FinalResult({
 
       return {
         subject,
-        test,
-        exam,
-        total,
-        remark: getRemark(total),
+        firstScore,
+        secondScore,
+        thirdScore,
+        average,
+        remark: getRemark(average),
         classLowest,
         classHighest,
       };
     });
-  }, [subjects, studentScores, classStudents]);
+  }, [subjects, studentScores, classStudents, firstTermScores, secondTermScores, isThirdTerm, currentStudentId]);
 
   const totalMarkObtainable = subjectRows.length * 100;
-  const markObtained = subjectRows.reduce((sum, row) => sum + row.total, 0);
+  const markObtained = subjectRows.reduce((sum, row) => sum + (isThirdTerm ? row.average : row.total), 0);
   const percentage = totalMarkObtainable ? ((markObtained / totalMarkObtainable) * 100).toFixed(2) : '0.00';
 
   const position = useMemo(() => {
     if (!classStudents.length) return 'N/A';
 
     const totals = classStudents.map((student) => {
-      const scores = normalizeScores(student.scores || {});
+      if (!isThirdTerm) {
+        const scores = normalizeScores(student.scores || {});
+        return subjects.reduce((acc, subject) => {
+          const subjectScore = normalizeScores(scores[subject] || {});
+          return acc + (Number(subjectScore.test) || 0) + (Number(subjectScore.exam) || 0);
+        }, 0);
+      }
+
+      const studentId = resolveStudentId(student.studentId || student.id || student._id);
       return subjects.reduce((acc, subject) => {
-        const subjectScore = normalizeScores(scores[subject] || {});
-        return acc + (Number(subjectScore.test) || 0) + (Number(subjectScore.exam) || 0);
+        const firstClass = getScoreBySubject(firstTermScores[studentId], subject);
+        const secondClass = getScoreBySubject(secondTermScores[studentId], subject);
+        const thirdClass = getScoreBySubject(student.scores, subject);
+        const average = getAverageFromScores([firstClass, secondClass, thirdClass]);
+        return acc + average;
       }, 0);
     });
 
     const sorted = [...totals].sort((a, b) => b - a);
-    const studentTotal = subjectRows.reduce((acc, row) => acc + row.total, 0);
+    const studentTotal = subjectRows.reduce((acc, row) => acc + (isThirdTerm ? row.average : row.total), 0);
     const index = sorted.indexOf(studentTotal);
     if (index === -1) return 'N/A';
     const suffix = index === 0 ? 'ST' : index === 1 ? 'ND' : index === 2 ? 'RD' : 'TH';
     return `${index + 1}${suffix}`;
-  }, [classStudents, subjectRows, subjects]);
+  }, [classStudents, subjectRows, subjects, isThirdTerm, firstTermScores, secondTermScores]);
 
   return (
     <>
@@ -155,9 +227,20 @@ export default function FinalResult({
             <thead>
               <tr>
                 <th>SUBJECTS</th>
-                <th>CA (30%)</th>
-                <th>EXAM (70%)</th>
-                <th>TOTAL (100%)</th>
+                {isThirdTerm ? (
+                  <>
+                    <th>1st (100%)</th>
+                    <th>2nd (100%)</th>
+                    <th>3rd (100%)</th>
+                    <th>AVRG (100%)</th>
+                  </>
+                ) : (
+                  <>
+                    <th>CA (30%)</th>
+                    <th>EXAM (70%)</th>
+                    <th>TOTAL (100%)</th>
+                  </>
+                )}
                 <th>REMARK</th>
                 {!isSeniorSecondary && <th>Class Lowest</th>}
                 {!isSeniorSecondary && <th>Class Highest</th>}
@@ -168,9 +251,20 @@ export default function FinalResult({
                 subjectRows.map((row) => (
                   <tr key={row.subject}>
                     <td>{subjectNames[row.subject] || row.subject}</td>
-                    <td>{row.test}</td>
-                    <td>{row.exam}</td>
-                    <td>{row.total}</td>
+                    {isThirdTerm ? (
+                      <>
+                        <td>{row.firstScore}</td>
+                        <td>{row.secondScore}</td>
+                        <td>{row.thirdScore}</td>
+                        <td>{row.average}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{row.test}</td>
+                        <td>{row.exam}</td>
+                        <td>{row.total}</td>
+                      </>
+                    )}
                     <td>{row.remark}</td>
                     {!isSeniorSecondary && <td>{row.classLowest}</td>}
                     {!isSeniorSecondary && <td>{row.classHighest}</td>}
@@ -178,7 +272,9 @@ export default function FinalResult({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={isSeniorSecondary ? 5 : 7}>No subject scores available for this result.</td>
+                  <td colSpan={isThirdTerm ? (isSeniorSecondary ? 6 : 8) : (isSeniorSecondary ? 5 : 7)}>
+                    No subject scores available for this result.
+                  </td>
                 </tr>
               )}
             </tbody>

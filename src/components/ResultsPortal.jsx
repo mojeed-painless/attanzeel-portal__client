@@ -487,7 +487,18 @@ export default function ResultsPortal() {
         return;
       }
 
-      const classData = await getResultsByYearTermClass(selectedYear, selectedTerm, studentClass, user?.department);
+      const fetchRequests = [
+        getResultsByYearTermClass(selectedYear, selectedTerm, studentClass, user?.department)
+      ];
+
+      if (selectedTerm === 'Third Term') {
+        fetchRequests.push(
+          getResultsByYearTermClass(selectedYear, 'First Term', studentClass, user?.department).catch(() => ({ students: [] })),
+          getResultsByYearTermClass(selectedYear, 'Second Term', studentClass, user?.department).catch(() => ({ students: [] }))
+        );
+      }
+
+      const [classData, firstTermResponse, secondTermResponse] = await Promise.all(fetchRequests);
       setClassRemovedSubjects(classData.removedSubjects || []);
       const studentId = user?.id || user?._id || user?.studentId;
       const student = (classData.students || []).find((s) => {
@@ -502,6 +513,31 @@ export default function ResultsPortal() {
         setStudentResult(null);
         setStudentClassResults(classData.students || []);
         return;
+      }
+
+      if (selectedTerm === 'Third Term') {
+        setFirstTermScores(firstTermResponse?.students ? firstTermResponse.students.reduce((acc, student) => {
+          const studentId = resolveStudentId(student.studentId);
+          if (!studentId) return acc;
+          const scores = student.scores && typeof student.scores.toObject === 'function'
+            ? student.scores.toObject()
+            : student.scores;
+          acc[studentId] = scores || {};
+          return acc;
+        }, {}) : {});
+
+        setSecondTermScores(secondTermResponse?.students ? secondTermResponse.students.reduce((acc, student) => {
+          const studentId = resolveStudentId(student.studentId);
+          if (!studentId) return acc;
+          const scores = student.scores && typeof student.scores.toObject === 'function'
+            ? student.scores.toObject()
+            : student.scores;
+          acc[studentId] = scores || {};
+          return acc;
+        }, {}) : {});
+      } else {
+        setFirstTermScores({});
+        setSecondTermScores({});
       }
 
       const allWideStudents = await fetchAllClassWideStudents(studentClass, user?.department);
@@ -803,6 +839,8 @@ export default function ResultsPortal() {
                     className={user?.class || selectedClass}
                     removedSubjects={classRemovedSubjects}
                     department={user?.department}
+                    firstTermScores={firstTermScores}
+                    secondTermScores={secondTermScores}
                   />
                 </div>
               </div>
