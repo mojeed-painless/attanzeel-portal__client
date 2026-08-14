@@ -70,10 +70,13 @@
   max-width: 1077px;
   margin: 30px auto;
   background: #fff;
-  border-radius: 14px;
   overflow: hidden;
   color: #000;
   font-family: "Times New Roman", Times, serif;
+}
+
+.fee-card__content {
+  border: 2px solid #000;
 }
 
 .fee-header {
@@ -256,24 +259,44 @@
 }
 
 .bill-btn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+  position: absolute;
+  top: 20px;
+  left: 9.5rem;
+}
+
+.bill-btn > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .bill-btn button {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.875rem;
-    background-color: #0f766e;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  background-color: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
 }
 
-.bill-btn div {
-    display: flex;
-    gap: 10px;
+.bill-btn button:hover {
+  opacity: 0.9;
+}
+
+.bill-btn button.primary {
+  background-color: #0f766e;
+}
+
+.bill-btn button:not(.primary) {
+  background-color: #374151;
+}
+
+.bill-btn button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 
