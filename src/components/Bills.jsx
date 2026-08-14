@@ -9,11 +9,14 @@ export default function FeeStructure({ grade }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!grade) return;
+
     (async () => {
       try {
         setLoading(true);
-        const data = await getBills();
+        const data = await getBills(grade);
         setBill(data.bill);
+        setError('');
       } catch (err) {
         console.error(err);
         setError('Failed to load bills');
@@ -21,7 +24,7 @@ export default function FeeStructure({ grade }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [grade]);
 
   if (loading) return <div className="fee-card">Loading...</div>;
   if (error) return <div className="fee-card">{error}</div>;
@@ -37,18 +40,17 @@ export default function FeeStructure({ grade }) {
   const maleSub2 = subtotal(rightItems, 'malePrice');
   const femaleSub2 = subtotal(rightItems, 'femalePrice');
 
-  const handleChange = (index, field, value) => {
-    const items = [...bill.items];
-    const idx = items.findIndex((it) => it.name === index);
-    if (idx === -1) return;
-    items[idx] = { ...items[idx], [field]: Number(value) || 0 };
+  const handleChange = (itemName, field, value) => {
+    const items = bill.items.map((item) =>
+      item.name === itemName ? { ...item, [field]: Number(value) || 0 } : item
+    );
     setBill({ ...bill, items });
   };
 
   const onSave = async () => {
     try {
       setLoading(true);
-      const data = await updateBills(bill);
+      const data = await updateBills(grade, bill);
       setBill(data.bill);
       setEditing(false);
     } catch (err) {

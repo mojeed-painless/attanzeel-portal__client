@@ -21,9 +21,9 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export const getBills = async () => {
+export const getBills = async (grade) => {
   try {
-    const response = await apiClient.get('/bills');
+    const response = await apiClient.get(`/bills/${encodeURIComponent(grade)}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching bills:', error);
@@ -31,12 +31,12 @@ export const getBills = async () => {
   }
 };
 
-export const updateBills = async (billPayload) => {
+export const updateBills = async (grade, billPayload) => {
   try {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('Authentication required');
 
-    const response = await apiClient.put('/bills', billPayload, {
+    const response = await apiClient.put(`/bills/${encodeURIComponent(grade)}`, billPayload, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
