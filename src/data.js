@@ -21,6 +21,7 @@
       FolderInput,
       FolderSymlink,
       Hourglass,
+      ReceiptText,
   } from 'lucide-react';
 
 export const toSentenceCase = (str) => {
@@ -66,6 +67,12 @@ export const AcademicsModules = [
     desc: 'Directory of all students with edit, view, and delete controls.', 
     color: '#ef4444', 
     icon: GraduationCap 
+  },
+  { id: 'bills', 
+    title: 'School Bills', 
+    desc: 'Directory of all students with edit, view, and delete controls.', 
+    color: '#5d15c1', 
+    icon: ReceiptText 
   }
 ];
 

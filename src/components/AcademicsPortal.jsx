@@ -16,6 +16,7 @@ import {
   deleteStaff,
 } from '../api/staff';
 import UnderDevelopment from './UnderDevelopment.jsx';
+import Bills from './Bills.jsx';
 import EmptyState from './EmptyState.jsx';
 import LoadingEffect from './LoadingEffect.jsx';
 import ProfileBox from './ProfileBox.jsx';
@@ -26,6 +27,8 @@ import { Eye, EyeOff, Search, Filter, ChevronLeft, SearchX, X,
   Calendar,
   Edit3,
  } from 'lucide-react';
+
+ import "../assets/styles/bills.css";
 
 function AcademicsSettings() {
   const [settings, setSettings] = useState({
@@ -749,6 +752,57 @@ function StudentsManagement() {
   );
 }
 
+function SchoolBills() {
+  const [currentGrade, setCurrentGrade] = useState(null);
+  const [showImage, setShowImage] = useState(false);
+
+  const classGroups = [
+    "Play Group",
+    "Kindergarten",
+    "Nursery",
+    "Primary 1 - 3",
+    "Primary 4 - 5",
+    "JSS 1 - 2",
+    "JSS 3",
+    "SS 1 - 2",
+    "SS 3",
+  ];
+
+
+  return (
+    <>
+      <div className="class-cards">
+        {classGroups.map((group) => (
+          <button
+            key={group}
+            className="class-card"
+            onClick={() => {setCurrentGrade(group); setShowImage(true);}}
+          >
+            <span>{group}</span>
+            <span className="arrow">→</span>
+          </button>
+        ))}
+      </div>
+
+      {showImage && (
+        <div
+          className="image-modal"
+        >
+          <button
+            className="close-button"
+            onClick={() => setShowImage(false)}
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+          <Bills grade={currentGrade}/>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function AcademicsPortal() {
   const [role, setRole] = useState(null);
   const [activeModule, setActiveModule] = useState(null);
@@ -771,6 +825,8 @@ export default function AcademicsPortal() {
         return <StaffManagement />;
       case 'students':
         return <StudentsManagement />;
+      case 'bills':
+        return <SchoolBills />
       default:
         return null;
     }
