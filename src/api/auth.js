@@ -35,7 +35,7 @@ apiClient.interceptors.request.use(
  * Login function - authenticates user and returns token + role
  * @param {string} username - User's username
  * @param {string} password - User's password
- * @returns {Promise} - Returns { token, role, user }
+ * @returns {Promise} - Returns { token, role, user } or throws error with special codes
  */
 export const login = async (username, password) => {
   try {
@@ -53,7 +53,11 @@ export const login = async (username, password) => {
     
     return response.data;
   } catch (error) {
-    throw error.response?.data?.message || 'Login failed. Please try again.';
+    const errorData = error.response?.data;
+    throw {
+      message: errorData?.message || 'Login failed. Please try again.',
+      ...errorData,
+    };
   }
 };
 
@@ -66,7 +70,53 @@ export const register = async (userData) => {
     const response = await apiClient.post('/auth/register', userData);
     return response.data;
   } catch (error) {
-    throw error.response?.data?.message || 'Registration failed. Please try again.';
+    const errorData = error.response?.data;
+    throw {
+      message: errorData?.message || 'Registration failed. Please try again.',
+      ...errorData,
+    };
+  }
+};
+
+/**
+ * Verify email with verification code
+ * @param {string} email - User's email
+ * @param {string} verificationCode - The verification code (6 digits)
+ * @returns {Promise} - Returns success message and user data
+ */
+export const verifyEmail = async (email, verificationCode) => {
+  try {
+    const response = await apiClient.post('/auth/verify-email', {
+      email,
+      verificationCode,
+    });
+    return response.data;
+  } catch (error) {
+    const errorData = error.response?.data;
+    throw {
+      message: errorData?.message || 'Email verification failed. Please try again.',
+      ...errorData,
+    };
+  }
+};
+
+/**
+ * Resend verification code to email
+ * @param {string} email - User's email
+ * @returns {Promise} - Returns success message
+ */
+export const resendVerificationCode = async (email) => {
+  try {
+    const response = await apiClient.post('/auth/resend-verification', {
+      email,
+    });
+    return response.data;
+  } catch (error) {
+    const errorData = error.response?.data;
+    throw {
+      message: errorData?.message || 'Failed to resend verification code. Please try again.',
+      ...errorData,
+    };
   }
 };
 

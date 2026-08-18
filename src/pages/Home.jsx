@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowRightLong, FaEye, FaEyeSlash } from "react-icons/fa6";
 import '../assets/styles/login.css';
 import loginLogo from '../assets/images/atlogo.png';
-import { login, register } from '../api/auth';
+import { login, register, verifyEmail, resendVerificationCode } from '../api/auth';
 import { getAllClasses } from '../api/classes';
 import { MoveRight, MoveLeft } from 'lucide-react';
+import VerificationModal from '../components/VerificationModal';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -24,6 +25,12 @@ const Login = () => {
   const [regShowPassword, setRegShowPassword] = useState(false);
   const [regEmail, setRegEmail] = useState('');
   const [regClasses, setRegClasses] = useState([]);
+  
+  // Verification Modal states
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationMode, setVerificationMode] = useState('register'); // 'register' or 'login'
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,7 +56,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { role } = await login(username, password);
+      const response = await login(username, password);
+      const { role } = response;
       
       // Route based on role
       if (role === 'admin') {
@@ -60,7 +68,15 @@ const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err || 'Invalid credentials. Please try again.');
+      // Check if error is email verification required
+      if (err.requiresVerification && err.email) {
+        setVerificationEmail(err.email);
+        setVerificationMode('login');
+        setShowVerificationModal(true);
+        setError('Please verify your email to complete login.');
+      } else {
+        setError(err.message || err || 'Invalid credentials. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -79,7 +95,7 @@ const Login = () => {
     }
 
     try {
-      await register({
+      const response = await register({
         firstName: regFirstName,
         lastName: regLastName,
         title: regTitle,
@@ -89,18 +105,28 @@ const Login = () => {
         class: regClasses.join(', '),
         role: 'staff'
       });
-      setSuccessMessage('Registration successful. Your account is pending admin approval.');
-      setIsRegistrationMode(false);
-      setRegFirstName('');
-      setRegLastName('');
-      setRegTitle('');
-      setRegUsername('');
-      setRegEmail('');
-      setRegPassword('');
-      setRegShowPassword(false);
-      setRegClasses([]);
+
+      // Show verification modal for staff
+      if (response.requiresVerification) {
+        setVerificationEmail(regEmail);
+        setVerificationMode('register');
+        setShowVerificationModal(true);
+        setSuccessMessage('Registration successful! Check your email for the verification code.');
+      } else {
+        setSuccessMessage('Registration successful. Your account is pending admin approval.');
+        // Reset form
+        setRegFirstName('');
+        setRegLastName('');
+        setRegTitle('');
+        setRegUsername('');
+        setRegEmail('');
+        setRegPassword('');
+        setRegShowPassword(false);
+        setRegClasses([]);
+        setIsRegistrationMode(false);
+      }
     } catch (err) {
-      setError(err || 'Registration failed. Please try again.');
+      setError(err.message || err || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -115,8 +141,65 @@ const Login = () => {
     setRegClasses((prev) => prev.filter((cls) => cls !== className));
   };
 
+  const handleVerifyEmail = async (email, code) => {
+    try {
+      const response = await verifyEmail(email, code);
+      setSuccessMessage(response.message);
+      
+      // After verification, close modal and reset
+      setTimeout(() => {
+        setShowVerificationModal(false);
+        setVerificationEmail('');
+        setVerificationMode('register');
+        
+        // Clear registration form
+        setRegFirstName('');
+        setRegLastName('');
+        setRegTitle('');
+        setRegUsername('');
+        setRegEmail('');
+        setRegPassword('');
+        setRegShowPassword(false);
+        setRegClasses([]);
+        setIsRegistrationMode(false);
+        
+        setError('');
+      }, 2000);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleResendCode = async (email) => {
+    try {
+      const response = await resendVerificationCode(email);
+      return response;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleCloseVerificationModal = () => {
+    // Don't allow closing if in progress
+    if (loading) return;
+    
+    setShowVerificationModal(false);
+    setVerificationEmail('');
+    setVerificationMode('register');
+  };
+
   return (
     <div className="login-container">
+      {showVerificationModal && (
+        <VerificationModal
+          email={verificationEmail}
+          onVerify={handleVerifyEmail}
+          onResend={handleResendCode}
+          onClose={handleCloseVerificationModal}
+          isLoading={loading}
+        />
+      )}
+
       <div className="login-card" id="login-form">
 
         <h3 className='login-title'>{isRegistrationMode ? 'Staff Registration' : 'Login to your account'}</h3>
