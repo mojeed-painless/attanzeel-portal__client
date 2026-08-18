@@ -130,23 +130,19 @@ export default function DashboardPortal() {
           ].map((item) => {
             const { title, value, Icon, color } = item;
             return (
-              <div key={title} className="statistics__card">
-                <span className='stats-icon' style={{background: color}}>
-                  <Icon size={18}/>
+              <div key={title} className="statistics__card" style={{background: color}}>
+                <span className='stats-icon' >
+                  <Icon size={25}/>
                 </span>
                 <h4>{value}</h4>
                 <p>{title}</p>
+                <span className='stats-icon2' >
+                  <Icon strokeWidth={1.2} size={125}/>
+                </span>
               </div>
             );
           })}
         </div>)}
-
-
-
-
-
-
-
 
 
 
