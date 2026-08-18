@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import '../assets/styles/final-results.css';
 import cardHeader from '../assets/images/card-header.png';
 import { grades } from '../data';
@@ -221,9 +223,67 @@ export default function FinalResult({
     return `${index + 1} ${suffix}`;
   }, [classStudents, subjectRows, subjects, isThirdTerm, firstTermScores, secondTermScores]);
 
+  const resultRef = useRef(null);
+
+  const handleDownloadPdf = async () => {
+    if (!resultRef.current) return;
+
+    try {
+      const canvas = await html2canvas(resultRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollY: -window.scrollY,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const widthRatio = (pageWidth - margin * 2) / canvas.width;
+      const heightRatio = (pageHeight - margin * 2) / canvas.height;
+      const ratio = Math.min(widthRatio, heightRatio);
+      const imgWidth = canvas.width * ratio;
+      const imgHeight = canvas.height * ratio;
+      const x = (pageWidth - imgWidth) / 2;
+      const y = (pageHeight - imgHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
+      pdf.save(`${(studentName || 'student').toLowerCase().replace(/\s+/g, '-')}-result.pdf`);
+    } catch (error) {
+      console.error('Error downloading result PDF:', error);
+    }
+  };
+
+  const downloadPDF = () => {
+    const input = document.getElementById('final-result-card');
+    html2canvas(input, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save('result-card.pdf');
+    });
+  };
+
   return (
     <>
-      <div className="final-result__container">
+      <div className="final-result__container" ref={resultRef}>
         <header className="final-result__header">
           <img src={cardHeader} alt="School header" />
           <h4>{selectedTerm ? `${selectedTerm} RESULT` : 'RESULT'}</h4>
@@ -339,7 +399,7 @@ export default function FinalResult({
         </section>
       </div>
 
-      <button className="final-result__btn final-result__btn-success">
+      <button className="final-result__btn final-result__btn-success" onClick={handleDownloadPdf}>
         <span><Download size={16}/></span>
         Download
       </button>

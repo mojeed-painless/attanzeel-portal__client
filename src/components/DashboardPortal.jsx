@@ -166,12 +166,15 @@ export default function DashboardPortal() {
             {adminInfoData.map((item) => {
               const { title, value, IconComponent, color } = item;
               return (
-                <div key={title} className="statistics__card">
-                  <span className='stats-icon' style={{background: color}}>
-                    <IconComponent size={18}/>
+                <div key={title} className="statistics__card" style={{background: color}}>
+                  <span className='stats-icon' >
+                    <IconComponent size={25}/>
                   </span>
                   <h4>{value}</h4>
                   <p>{title}</p>
+                  <span className='stats-icon2' >
+                    <IconComponent strokeWidth={1.2} size={125}/>
+                  </span>
                 </div>
               );
             })}

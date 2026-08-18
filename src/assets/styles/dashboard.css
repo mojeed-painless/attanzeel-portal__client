@@ -454,14 +454,21 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
+  
+
 }
 
 .statistics__card {
   background: white;
-  padding: 1rem;
+  padding: 1.2rem;
   border-radius: 1rem;
   border: 1px solid #dddddd;
   box-shadow: 1px 38px 80px -58px rgba(0,0,0,0.75);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  gap: 0.8rem;
   transition: all 400ms ease;
 }
 
@@ -470,20 +477,37 @@
 }
 
 .stats-icon {
-  color: white;
+  color: grey;
+  background-color: white;
   padding: 0.5rem;
+  width: fit-content;
   display: inline-flex;
-  border-radius: 0.6rem;
+  border-radius: 0.4rem;
   margin-bottom: 0.5rem;
   
 }
 
+.statistics__card h4 {
+  color: white;
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
 .statistics__card p {
-  color: grey;
+  color: rgba(255, 255, 255, 0.65);
   font-size: 0.8rem;
   font-weight: 500;
 }
 
+.stats-icon2 {
+  position: absolute;
+  right: -2rem;
+  top: -2.5rem;
+  color: white;
+  opacity: 0.25;
+  font-weight: 100;
+}
 
 
 
