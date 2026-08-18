@@ -28,10 +28,10 @@ export default function DashboardPortal() {
   });
 
   const adminInfoData = [
-    { title: 'TOTAL STUDENTS', value: settings.totalStudents ?? '0', IconComponent: GraduationCap, color: '#3B82F6' },
+    { title: 'TOTAL STUDENTS', value: settings.totalStudents ?? '0', IconComponent: GraduationCap, color: '#2563eb' },
     { title: 'NUMBER OF SUBJECTS', value: '62', IconComponent: TrendingUp, color: '#10B981' },
     { title: 'CURRENT TERM', value: settings.currentTerm, IconComponent: Clock4, color: '#F59E0B' },
-    { title: 'ACADEMIC SESSION', value: settings.currentSession, IconComponent: ClipboardList, color: '#F43F5E' },
+    { title: 'ACADEMIC SESSION', value: settings.currentSession, IconComponent: ClipboardList, color: '#ef4444' },
   ];
 
   // Fetch settings and student class subjects
@@ -126,7 +126,7 @@ export default function DashboardPortal() {
             { title: 'SUBJECTS', value: studentStats.subjects, Icon: GraduationCap, color: '#3B82F6' },
             { title: 'AVG. SCORE', value: studentStats.avgScore, Icon: TrendingUp, color: '#10B981' },
             { title: 'ATTENDANCE', value: studentStats.attendance, Icon: Clock4, color: '#F59E0B' },
-            { title: 'TASKS', value: studentStats.tasks, Icon: ClipboardList, color: '#F43F5E' },
+            { title: 'TASKS', value: studentStats.tasks, Icon: ClipboardList, color: '#ef4444' },
           ].map((item) => {
             const { title, value, Icon, color } = item;
             return (
