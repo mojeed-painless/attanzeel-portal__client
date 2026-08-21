@@ -242,19 +242,17 @@ export default function ProfilePortal() {
               />
             </div>
             <p>
-              Admission ID:
+              Username:
               <span> {userData.username}</span>
             </p>
-            <small>{userData.class}</small>
           </div>
         ) : (
           <>
             <h4>{fullName || 'Loading...'}</h4>
             <p>
-              Admission ID:
+              Username:
               <span> {userData.username}</span>
             </p>
-            <small>{userData.class}</small>
           </>
         )}
       </div>
@@ -267,6 +265,26 @@ export default function ProfilePortal() {
           </h5>
 
           <div className="profile__details">
+
+
+
+            <div>
+              <span className="profile__details-icon"><GraduationCap size={18}/></span>
+
+              <div>
+                <small>Class / Classes Managed</small>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={userData.class || ''}
+                    disabled
+                    className="profile__input"
+                  />
+                ) : (
+                  <p>{userData.class || '-'}</p>
+                )}
+              </div>
+            </div>
             <div>
               <span className="profile__details-icon"><Settings size={18}/></span>
 
