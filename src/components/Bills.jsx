@@ -40,8 +40,8 @@ export default function FeeStructure({ grade }) {
 
   const maleSub1 = subtotal(leftItems, 'malePrice');
   const femaleSub1 = subtotal(leftItems, 'femalePrice');
-  const maleSub2 = subtotal(rightItems, 'malePrice');
-  const femaleSub2 = subtotal(rightItems, 'femalePrice');
+  const sub2 = subtotal(rightItems, 'malePrice');
+  // const femaleSub2 = subtotal(rightItems, 'femalePrice');
 
   const handleChange = (itemName, field, value) => {
     const items = bill.items.map((item) =>
@@ -180,18 +180,18 @@ export default function FeeStructure({ grade }) {
 
             <div className="subtotal-row right-subtotal">
               <strong>SUB TOTAL II</strong>
-              <strong>₦ {maleSub2.toLocaleString()}</strong>
+              <strong>₦ {sub2.toLocaleString()}</strong>
             </div>
 
             <div className="grand-total">
               <strong>GRAND TOTAL:</strong>
 
               <span>
-                Male <b>₦ {(maleSub1 + maleSub2).toLocaleString()}</b>
+                Male <b>₦ {(maleSub1 + sub2).toLocaleString()}</b>
               </span>
 
               <span>
-                Female <b>₦ {(femaleSub1 + femaleSub2).toLocaleString()}</b>
+                Female <b>₦ {(femaleSub1 + sub2).toLocaleString()}</b>
               </span>
             </div>
 
