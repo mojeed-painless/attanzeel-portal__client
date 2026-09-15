@@ -53,7 +53,7 @@ export default function FeeStructure({ grade }) {
   const handleDownload = async () => {
     if (!billRef.current) return;
 
-    try {
+    try {onChangeTheme
       const canvas = await html2canvas(billRef.current, {
         scale: 2,
         useCORS: true,
